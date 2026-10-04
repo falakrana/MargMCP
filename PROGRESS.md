@@ -17,8 +17,8 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 
 | Phase | Name | Status | Approval / notes |
 |---|---|---|---|
-| 1 | Repository Discovery, Architecture, and Implementation Plan | READY_FOR_REVIEW | Awaiting human approval |
-| 2 | Core SDK and First Instrumentation Adapter | NOT_STARTED | Requires explicit approval of Phase 1 |
+| 1 | Repository Discovery, Architecture, and Implementation Plan | APPROVED | Approved by owner |
+| 2 | Core SDK and First Instrumentation Adapter | IN_PROGRESS | Working |
 | 3 | Ingestion API, Persistence, and Query Services | NOT_STARTED | Requires explicit approval of Phase 2 |
 | 4 | Metrics, Prometheus, and Trace Export Pipeline | NOT_STARTED | Requires explicit approval of Phase 3 |
 | 5 | Trace Details and Run History | NOT_STARTED | Requires explicit approval of Phase 4 |

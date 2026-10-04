@@ -6,10 +6,10 @@
 
 | Field | Value |
 |---|---|
-| **Current Phase** | Phase 1 — Repository Discovery, Architecture, and Implementation Plan |
-| **Phase Status** | `READY_FOR_REVIEW` |
-| **Last Approved Phase** | None |
-| **Next Phase** | Phase 2 — Core SDK and First Instrumentation Adapter (`NOT_STARTED`) |
+| **Current Phase** | Phase 2 — Core SDK and First Instrumentation Adapter |
+| **Phase Status** | `IN_PROGRESS` |
+| **Last Approved Phase** | Phase 1 |
+| **Next Phase** | Phase 3 — Ingestion API, Persistence, and Query Services (`NOT_STARTED`) |
 
 ---
 
@@ -17,8 +17,8 @@
 
 | Phase | Name | Status |
 |---|---|---|
-| 1 | Repository Discovery, Architecture, and Implementation Plan | `READY_FOR_REVIEW` |
-| 2 | Core SDK and First Instrumentation Adapter | `NOT_STARTED` |
+| 1 | Repository Discovery, Architecture, and Implementation Plan | `APPROVED` |
+| 2 | Core SDK and First Instrumentation Adapter | `IN_PROGRESS` |
 | 3 | Ingestion API, Persistence, and Query Services | `NOT_STARTED` |
 | 4 | Metrics, Prometheus, and Trace Export Pipeline | `NOT_STARTED` |
 | 5 | Trace Details and Run History | `NOT_STARTED` |

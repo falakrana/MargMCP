@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentops-sdk"
+version = "0.1.0"
+description = "AgentOps MCP Telemetry SDK"
+authors = [
+    {name = "AgentOps Team", email = "team@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic>=2.0.0",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "responses>=0.24.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["agentops_sdk*"]
+
+[tool.pytest.ini_options]
+addopts = "-v --cov=agentops_sdk --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
