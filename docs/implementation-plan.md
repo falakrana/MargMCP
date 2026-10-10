@@ -5,65 +5,71 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 ---
 
 ## Phase 1 — Repository Discovery, Architecture, and Implementation Plan
+
 **Status:** `IN_PROGRESS`
 
-- [x] Inspect repository files, directory structure, and existing code
-- [x] Inspect PRD/SRS and architecture documents
-- [x] Check Git status and uncommitted changes
-- [x] Summarize what exists vs. what is needed
-- [x] Identify gaps against the implementation plan
-- [x] Propose modular directory structure
-- [x] Document architecture and component boundaries (`docs/architecture.md`)
-- [x] Document data flow, trust boundaries, storage responsibilities
-- [x] Define telemetry schema v1 (`docs/telemetry-schema.md`)
-- [x] Define API/MCP contract boundaries
-- [x] Record assumptions and decisions (`docs/assumptions-and-decisions.md`)
-- [x] Create `IMPLEMENTATION_STATUS.md`
-- [x] Create testing strategy (`docs/testing-strategy.md`)
-- [x] Create `.gitignore` and `.env.example`
-- [ ] Human review and approval
+- [X] Inspect repository files, directory structure, and existing code
+- [X] Inspect PRD/SRS and architecture documents
+- [X] Check Git status and uncommitted changes
+- [X] Summarize what exists vs. what is needed
+- [X] Identify gaps against the implementation plan
+- [X] Propose modular directory structure
+- [X] Document architecture and component boundaries (`docs/architecture.md`)
+- [X] Document data flow, trust boundaries, storage responsibilities
+- [X] Define telemetry schema v1 (`docs/telemetry-schema.md`)
+- [X] Define API/MCP contract boundaries
+- [X] Record assumptions and decisions (`docs/assumptions-and-decisions.md`)
+- [X] Create `IMPLEMENTATION_STATUS.md`
+- [X] Create testing strategy (`docs/testing-strategy.md`)
+- [X] Create `.gitignore` and `.env.example`
+- [X] Human review and approval
 
 ---
 
 ## Phase 2 — Core SDK and First Instrumentation Adapter
-**Status:** `NOT_STARTED`
 
-- [ ] SDK package structure and public API
-- [ ] Configuration (endpoint, API key, project/agent IDs, env, timeouts, sampling, privacy)
-- [ ] Run lifecycle (start, events, output summary, end, error, cancel)
-- [ ] Context management (auto-finalize on exception)
-- [ ] Exporter abstraction + HTTP exporter
-- [ ] Bounded buffering/batching with configurable flush
-- [ ] Idempotent event IDs
-- [ ] Redaction hooks; payload capture OFF by default
-- [ ] Trace/run context propagation
-- [ ] Generic Python wrapper/decorator
-- [ ] Example agent + integration test
-- [ ] Package docs + `.env.example` update
-- [ ] Tests: lifecycle, exception, cancellation, exporter timeout, retry, redaction, disabled SDK, nested context
+**Status:** `APPROVED`
+
+- [X] SDK package structure and public API
+- [X] Configuration (endpoint, API key, project/agent IDs, env, timeouts, sampling, privacy)
+- [X] Run lifecycle (start, events, output summary, end, error, cancel)
+- [X] Context management (auto-finalize on exception)
+- [X] Exporter abstraction + HTTP exporter
+- [X] Bounded buffering/batching with configurable flush
+- [X] Idempotent event IDs
+- [X] Redaction hooks; payload capture OFF by default
+- [X] Trace/run context propagation
+- [X] Generic Python wrapper/decorator
+- [X] Example agent + integration test
+- [X] Package docs + `.env.example` update
+- [X] Tests: lifecycle, exception, cancellation, exporter timeout, retry, redaction, disabled SDK, nested context
+- [X] Human review and approval
 
 ---
 
 ## Phase 3 — Ingestion API, Persistence, and Query Services
-**Status:** `NOT_STARTED`
 
-- [ ] FastAPI app structure (routers, services, schemas, repository layer, config, DI)
-- [ ] API-key authentication (hashed storage)
-- [ ] Project/agent registration flow
-- [ ] Ingestion endpoints (run lifecycle, events, spans)
-- [ ] Schema validation (version, IDs, timestamps, payload size, status transitions)
-- [ ] PostgreSQL persistence + idempotent writes
-- [ ] Query services (list/filter runs, run details, agent metadata, error summaries)
-- [ ] Pagination + time-range filters
-- [ ] Tenant/project authorization at service layer
-- [ ] Health/readiness endpoints
-- [ ] Database indexes + migrations (Alembic)
-- [ ] Seed/demo data (clearly marked synthetic)
-- [ ] API documentation + error codes
+**Status:** `APPROVED`
+
+- [X] FastAPI app structure (routers, services, schemas, repository layer, config, DI)
+- [X] API-key authentication (hashed storage)
+- [X] Project/agent registration flow
+- [X] Ingestion endpoints (run lifecycle, events, spans)
+- [X] Schema validation (version, IDs, timestamps, payload size, status transitions)
+- [X] PostgreSQL persistence + idempotent writes
+- [X] Query services (list/filter runs, run details, agent metadata, error summaries)
+- [X] Pagination + time-range filters
+- [X] Tenant/project authorization at service layer
+- [X] Health/readiness endpoints
+- [X] Database indexes + migrations (Alembic)
+- [X] Seed/demo data (clearly marked synthetic)
+- [X] API documentation + error codes
+- [X] Human review and approval
 
 ---
 
 ## Phase 4 — Metrics, Prometheus, and Trace Export Pipeline
+
 **Status:** `NOT_STARTED`
 
 - [ ] Backend service metrics instrumentation
@@ -82,6 +88,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 ---
 
 ## Phase 5 — Trace Details and Run History
+
 **Status:** `NOT_STARTED`
 
 - [ ] API contract joining run metadata + events + trace references
@@ -97,6 +104,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 ---
 
 ## Phase 6 — Monitoring Dashboard
+
 **Status:** `NOT_STARTED`
 
 - [ ] React + TypeScript setup
@@ -117,6 +125,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 ---
 
 ## Phase 7 — MCP Server and Read-Only Monitoring Tools
+
 **Status:** `NOT_STARTED`
 
 - [ ] MCP SDK integration
@@ -133,6 +142,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 ---
 
 ## Phase 8 — AI Diagnostic Assistant
+
 **Status:** `NOT_STARTED`
 
 - [ ] Role definition, tool permissions, context limits, response format
@@ -151,6 +161,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 ---
 
 ## Phase 9 — Security, Reliability, and Performance Hardening
+
 **Status:** `NOT_STARTED`
 
 - [ ] Threat model review
@@ -171,6 +182,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 ---
 
 ## Phase 10 — Deployment, End-to-End Pilot, and Release Readiness
+
 **Status:** `NOT_STARTED`
 
 - [ ] Deployment target review

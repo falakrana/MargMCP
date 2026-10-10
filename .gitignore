@@ -53,6 +53,8 @@ infra/prometheus/data/
 infra/tempo/data/
 infra/postgres/data/
 
-# Logs
+# Logs and databases
 *.log
 logs/
+*.db
+*.sqlite*
