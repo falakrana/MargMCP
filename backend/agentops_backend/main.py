@@ -96,3 +96,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
 
 def app_factory() -> FastAPI:  # for `uvicorn agentops_backend.main:app_factory --factory`
     return create_app()
+
+
+app = create_app()
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("agentops_backend.main:app", host="0.0.0.0", port=8000, reload=True)
