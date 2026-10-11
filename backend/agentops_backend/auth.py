@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from fastapi import Depends, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -21,6 +22,11 @@ from agentops_backend.models import ApiKey
 
 KEY_PREFIX_MARK = "aop_"
 VALID_SCOPES = {"ingest", "read"}
+
+bearer_scheme = HTTPBearer(
+    auto_error=False,
+    description="Bearer token authentication (API key or admin token)",
+)
 
 
 @dataclass(frozen=True)
@@ -59,8 +65,13 @@ def _bearer_token(request: Request) -> Optional[str]:
     return token.strip()
 
 
-def authenticate(request: Request, session: Session) -> Principal:
-    token = _bearer_token(request)
+def authenticate(
+    request: Request,
+    session: Session,
+    token: Optional[str] = None,
+) -> Principal:
+    if token is None:
+        token = _bearer_token(request)
     if token is None:
         raise unauthorized()
     secret_key = request.app.state.settings.secret_key
@@ -92,9 +103,12 @@ def get_session(request: Request):
 
 def require_scope(scope: str) -> Callable[..., Principal]:
     def dependency(
-        request: Request, session: Session = Depends(get_session)
+        request: Request,
+        session: Session = Depends(get_session),
+        credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     ) -> Principal:
-        principal = authenticate(request, session)
+        token = credentials.credentials if credentials is not None else _bearer_token(request)
+        principal = authenticate(request, session, token=token)
         if scope not in principal.scopes:
             raise forbidden("insufficient_scope", f"API key lacks the '{scope}' scope.")
         return principal
@@ -108,10 +122,13 @@ def require_project_access(principal: Principal, project_id: str) -> None:
         raise forbidden("project_access_denied", "Credential is not valid for this project.")
 
 
-def require_admin(request: Request) -> None:
+def require_admin(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+) -> None:
     configured = request.app.state.settings.admin_token
     if not configured:
         raise ApiError(503, "admin_disabled", "Admin API is not enabled on this server.")
-    token = _bearer_token(request)
+    token = credentials.credentials if credentials is not None else _bearer_token(request)
     if token is None or not hmac.compare_digest(token, configured):
         raise unauthorized("Missing or invalid admin credentials.")
