@@ -13,7 +13,7 @@ scrape_configs:
       type: Bearer
       credentials_file: /tmp/agentops_metrics_token
     static_configs:
-      - targets: ["backend:8000"]
+      - targets: ["host.docker.internal:8000"]
 
   - job_name: prometheus
     static_configs:

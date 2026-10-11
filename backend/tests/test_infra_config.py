@@ -67,7 +67,7 @@ def test_prometheus_scrapes_backend_with_token_file():
     cfg = load_yaml("prometheus", "prometheus.yml")
     job = next(j for j in cfg["scrape_configs"] if j["job_name"] == "agentops-backend")
     assert job["metrics_path"] == "/metrics"
-    assert job["static_configs"][0]["targets"] == ["backend:8000"]
+    assert any(t in ("backend:8000", "host.docker.internal:8000") for t in job["static_configs"][0]["targets"])
     auth = job["authorization"]
     assert auth["type"] == "Bearer" and "credentials_file" in auth
     assert "credentials" not in auth  # never an inline secret

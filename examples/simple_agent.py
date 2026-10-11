@@ -1,9 +1,20 @@
+import os
 import time
+from pathlib import Path
+from dotenv import load_dotenv
+
+# 1. Load .env from project root
+env_path = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(env_path)
+
+# Set default project_id if not provided
+if not os.getenv("AGENTOPS_PROJECT_ID"):
+    os.environ["AGENTOPS_PROJECT_ID"] = "synthetic-demo"
+
 from agentops_sdk import AgentOps
 from agentops_sdk.adapters.decorator import observe_agent
 
-# 1. Initialize the SDK
-# Usually you would call from_env() to load from environment variables.
+# 2. Initialize the SDK from environment variables
 agentops = AgentOps.from_env()
 
 # 2. Instrument using a decorator
