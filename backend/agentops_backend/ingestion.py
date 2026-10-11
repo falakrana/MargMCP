@@ -32,6 +32,7 @@ from agentops_backend.config import Settings
 from agentops_backend.errors import ApiError
 from agentops_backend.models import Agent, Event, Run, utcnow
 from agentops_backend.schemas import IngestBatch, IngestEvent, IngestResult, RejectedEvent
+from agentops_backend.observability import EventObservation, Observability
 
 logger = logging.getLogger(__name__)
 
@@ -243,12 +244,16 @@ def _get_or_create_run(
 
 def _process_event(
     session: Session, settings: Settings, project_id: str, ev: IngestEvent, now: datetime
-) -> bool:
-    """Persist one event. Returns True if newly stored, False if duplicate."""
+) -> Optional[EventObservation]:
+    """Persist one event.
+
+    Returns an :class:`EventObservation` if the event was newly stored, or
+    ``None`` if it was a duplicate (idempotent retry).
+    """
     if ev.project_id is not None and ev.project_id != project_id:
         raise EventRejected("project_mismatch", "Event project_id differs from batch project_id.")
     if session.get(Event, (project_id, ev.event_id)) is not None:
-        return False  # idempotent retry, regardless of current time/validation
+        return None  # idempotent retry, regardless of current time/validation
     if abs(ev.timestamp - now) > timedelta(hours=settings.timestamp_tolerance_hours):
         raise EventRejected(
             "timestamp_out_of_range",
@@ -286,11 +291,32 @@ def _process_event(
             )
             session.flush()
     except IntegrityError:
-        return False  # concurrent duplicate
+        return None  # concurrent duplicate
 
+    was_terminal = run.status in TERMINAL_STATUS.values()
+    had_duration = run.duration_ms is not None
     _apply_to_run(run, ev.event_type, ev.timestamp, data)
     session.flush()
-    return True
+    is_terminal = run.status in TERMINAL_STATUS.values()
+    return EventObservation(
+        project_id=project_id,
+        event_id=ev.event_id,
+        run_id=ev.run_id,
+        agent_id=ev.agent_id,
+        event_type=ev.event_type,
+        environment=ev.environment,
+        timestamp=ev.timestamp,
+        data=dict(data),
+        trace_id=run.trace_id,
+        root_span_id=run.root_span_id,
+        run_status=run.status,
+        run_started_at=run.started_at,
+        run_ended_at=run.ended_at,
+        run_duration_ms=run.duration_ms,
+        run_error_type=run.error_type,
+        terminal_transition=is_terminal and not was_terminal,
+        duration_became_known=(not had_duration) and run.duration_ms is not None,
+    )
 
 
 def validate_envelope(raw_body: bytes, settings: Settings) -> IngestBatch:
@@ -329,7 +355,11 @@ def validate_envelope(raw_body: bytes, settings: Settings) -> IngestBatch:
 
 
 def ingest_batch(
-    session: Session, settings: Settings, project_id: str, batch: IngestBatch
+    session: Session,
+    settings: Settings,
+    project_id: str,
+    batch: IngestBatch,
+    observer: Optional[Observability] = None,
 ) -> IngestResult:
     if batch.project_id != project_id:
         raise ApiError(
@@ -339,11 +369,14 @@ def ingest_batch(
     accepted = 0
     duplicates = 0
     rejected: list[RejectedEvent] = []
+    observations: list[EventObservation] = []
     try:
         for index, ev in enumerate(batch.batch):
             try:
-                if _process_event(session, settings, project_id, ev, now):
+                observation = _process_event(session, settings, project_id, ev, now)
+                if observation:
                     accepted += 1
+                    observations.append(observation)
                 else:
                     duplicates += 1
             except EventRejected as exc:
@@ -359,4 +392,7 @@ def ingest_batch(
         raise ApiError(
             503, "database_unavailable", "Storage is temporarily unavailable; retry later."
         )
+    if observer is not None:
+        # Post-commit and best-effort: never changes the response or stored data.
+        observer.record_batch(observations, duplicates, [r.code for r in rejected])
     return IngestResult(accepted=accepted, duplicates=duplicates, rejected=rejected)

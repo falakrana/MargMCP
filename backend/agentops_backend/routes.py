@@ -1,17 +1,22 @@
 """HTTP routes."""
 from __future__ import annotations
 
+import hmac
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
+from fastapi.security import HTTPAuthorizationCredentials
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from agentops_backend import ingestion, queries, registry
 from agentops_backend.auth import (
     Principal,
+    _bearer_token,
+    bearer_scheme,
     get_session,
     require_admin,
     require_project_access,
@@ -35,6 +40,7 @@ from agentops_backend.schemas import (
 )
 
 health_router = APIRouter(prefix="/health", tags=["health"])
+metrics_router = APIRouter(tags=["metrics"])
 ingest_router = APIRouter(prefix="/v1/telemetry", tags=["ingestion"])
 query_router = APIRouter(prefix="/v1/projects", tags=["query"])
 admin_router = APIRouter(
@@ -59,6 +65,31 @@ def ready(request: Request) -> dict:
     return {"status": "ready"}
 
 
+# ------------------------------- metrics ----------------------------------- #
+def _require_metrics_access(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+) -> None:
+    settings = request.app.state.settings
+    configured = settings.metrics_token
+    if not configured:
+        if settings.env == "development":
+            return  # local convenience only; documented in docs/observability.md
+        raise ApiError(503, "metrics_disabled", "Metrics endpoint is not enabled on this server.")
+    token = credentials.credentials if credentials is not None else _bearer_token(request)
+    if token is None or not hmac.compare_digest(token, configured):
+        raise ApiError(
+            401, "unauthorized", "Missing or invalid metrics credentials.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+@metrics_router.get("/metrics", dependencies=[Depends(_require_metrics_access)])
+def metrics(request: Request) -> Response:
+    registry_ = request.app.state.observability.metrics.registry
+    return Response(generate_latest(registry_), media_type=CONTENT_TYPE_LATEST)
+
+
 # ------------------------------ ingestion ---------------------------------- #
 @ingest_router.post("/events", response_model=IngestResult, status_code=202)
 async def post_events(
@@ -67,6 +98,7 @@ async def post_events(
     session: Session = Depends(get_session),
 ) -> IngestResult:
     settings = request.app.state.settings
+    observer = request.app.state.observability
     declared = request.headers.get("content-length")
     if declared and declared.isdigit() and int(declared) > settings.max_payload_bytes:
         raise ApiError(
@@ -75,9 +107,16 @@ async def post_events(
     raw = await request.body()
     batch = ingestion.validate_envelope(raw, settings)
     require_project_access(principal, batch.project_id)
-    return await run_in_threadpool(
-        ingestion.ingest_batch, session, settings, principal.project_id, batch
-    )
+    with observer.ingest_span(principal.project_id) as span:
+        result = await run_in_threadpool(
+            ingestion.ingest_batch, session, settings, principal.project_id, batch, observer
+        )
+        if span is not None:
+            span.set_attribute("agentops.batch_size", len(batch.batch))
+            span.set_attribute("agentops.accepted", result.accepted)
+            span.set_attribute("agentops.duplicates", result.duplicates)
+            span.set_attribute("agentops.rejected", len(result.rejected))
+    return result
 
 
 # -------------------------------- query ------------------------------------ #

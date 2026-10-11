@@ -1,0 +1,27 @@
+# Grafana Tempo — local development configuration (Phase 4).
+# Single-binary mode, local filesystem storage, OTLP receivers on 4317/4318.
+# NOT for production: no auth, no replication, local disk only.
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+# Trace retention default (docs/assumptions-and-decisions.md A-005): 30 days.
+compactor:
+  compaction:
+    block_retention: 720h
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks

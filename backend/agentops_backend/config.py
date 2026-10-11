@@ -39,6 +39,20 @@ class Settings(BaseSettings):
     timestamp_tolerance_hours: int = Field(default=24, ge=1)
     auto_register_agents: bool = True
 
+    # ---- Phase 4: observability ----
+    # Bearer token required to scrape GET /metrics. When unset, /metrics is open
+    # in development and disabled (503) in any other environment.
+    metrics_token: Optional[str] = None
+    # OTLP/HTTP traces endpoint (e.g. http://localhost:4318/v1/traces). Tracing
+    # export is disabled when unset.
+    otlp_endpoint: Optional[str] = None
+    service_name: str = "agentops-backend"
+    # Fraction of non-error traces exported. Error traces are always exported.
+    trace_sample_ratio: float = Field(default=1.0, ge=0.0, le=1.0)
+    # Bounded in-memory span queue; spans are dropped (and counted) when full.
+    trace_queue_size: int = Field(default=2048, ge=1)
+    trace_export_timeout_seconds: int = Field(default=5, ge=1)
+
     postgres_host: str = Field(default="localhost", validation_alias="POSTGRES_HOST")
     postgres_port: int = Field(default=5432, validation_alias="POSTGRES_PORT")
     postgres_db: str = Field(default="agentops", validation_alias="POSTGRES_DB")

@@ -17,7 +17,14 @@ from agentops_backend.config import Settings, get_settings
 from agentops_backend.db import make_engine, make_session_factory
 from agentops_backend.errors import ApiError
 from agentops_backend.models import Base
-from agentops_backend.routes import admin_router, health_router, ingest_router, query_router
+from agentops_backend.observability import INGEST_ENDPOINT, Observability, timer
+from agentops_backend.routes import (
+    admin_router,
+    health_router,
+    ingest_router,
+    metrics_router,
+    query_router,
+)
 
 logger = logging.getLogger("agentops_backend")
 
@@ -30,18 +37,20 @@ def _validation_details(errors: list[dict]) -> list[dict]:
     ]
 
 
-def create_app(settings: Optional[Settings] = None) -> FastAPI:
+def create_app(settings: Optional[Settings] = None, span_exporter=None) -> FastAPI:
     settings = settings or get_settings()
     settings.validate_for_runtime()
     logging.basicConfig(level=settings.log_level.upper())
 
     engine = make_engine(settings.resolved_database_url())
+    observability = Observability(settings, span_exporter=span_exporter)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if settings.auto_create_tables:
             Base.metadata.create_all(engine)
         yield
+        observability.shutdown()
         engine.dispose()
 
     app = FastAPI(
@@ -52,6 +61,21 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = make_session_factory(engine)
+    app.state.observability = observability
+
+    @app.middleware("http")
+    async def _ingestion_metrics(request: Request, call_next):
+        # Fixed path => bounded `endpoint` label; nothing from the request body.
+        if request.method != "POST" or request.url.path != INGEST_ENDPOINT:
+            return await call_next(request)
+        started = timer()
+        try:
+            response = await call_next(request)
+        except Exception:
+            observability.observe_request(INGEST_ENDPOINT, 500, timer() - started)
+            raise
+        observability.observe_request(INGEST_ENDPOINT, response.status_code, timer() - started)
+        return response
 
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, exc: ApiError):
@@ -88,6 +112,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         return JSONResponse(err.body(), status_code=500)
 
     app.include_router(health_router)
+    app.include_router(metrics_router)
     app.include_router(ingest_router)
     app.include_router(query_router)
     app.include_router(admin_router)

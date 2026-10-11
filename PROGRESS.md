@@ -184,6 +184,68 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Human approval:** Approved by owner ("So as phase 3 is complete. Can you commit accordingly?").
 - **Next permitted action:** Phase 3 approved; commit Phase 3 implementation and await authorization to begin Phase 4.
 
+### 2026-10-11 — Phase 4: Metrics, Prometheus, and Trace Export Pipeline
+- **Status at start:** `APPROVED` (Phase 3 approved by human owner; authorization "Start Phase 4" given).
+- **Work performed:**
+  - Designed and implemented Prometheus metrics module (`backend/agentops_backend/metrics.py`) using an isolated `CollectorRegistry` instance to prevent global collector leakage across tests and processes.
+  - Implemented core time-series metrics per `docs/telemetry-schema.md`: `agentops_runs_total`, `agentops_run_duration_seconds`, `agentops_llm_calls_total`, `agentops_llm_call_duration_seconds`, `agentops_tool_calls_total`, `agentops_tool_call_duration_seconds`, `agentops_tokens_total`, `agentops_ingestion_requests_total`, `agentops_ingestion_latency_seconds`, `agentops_events_total`, `agentops_events_rejected_total`, `agentops_trace_spans_total`, `agentops_trace_export_failures_total`, `agentops_observability_errors_total`, `agentops_backend_info`.
+  - Implemented strict label cardinality bounding and privacy screening via `BoundedLabel`: dynamic labels (`agent_id`, `provider`, `model`, `tool_name`, rejection `code`) are sanitised, truncated to 64 chars, and capped at 50–200 distinct values, with overflow collapsing into `"other"`. Run IDs, user IDs, raw prompts, and exception messages are strictly forbidden in metric labels.
+  - Added `GET /metrics` endpoint with authentication boundary: requires `AGENTOPS_METRICS_TOKEN` bearer token; open in development environment when token is unset; disabled with 503 outside development when token is unset.
+  - Built OpenTelemetry trace pipeline (`backend/agentops_backend/tracing.py`) materializing spans from accepted telemetry events:
+    - Root span `agent.run` correlated 1:1 with run `trace_id` and `root_span_id`.
+    - Child spans `llm.chat` and `tool.<name>` with parent span correlation.
+    - Request span `ingest.batch` with batch size and outcome attributes.
+  - Implemented error-preserving sampling: error runs/calls are always exported, while healthy runs sample according to `AGENTOPS_TRACE_SAMPLE_RATIO` (default 1.0).
+  - Implemented `ResilientExporter` with bounded `BatchSpanProcessor` queue: exporter crashes/timeouts are caught, counted, and never leak into ingestion or disrupt normal agent workflows.
+  - Created observability coordinator facade (`backend/agentops_backend/observability.py`) executed strictly post-commit with exception swallowing.
+  - Configured Prometheus scrape target (`infra/prometheus/prometheus.yml`) with bearer token credentials file.
+  - Configured Grafana Tempo (`infra/tempo/tempo.yml`) with OTLP receivers on 4317 (gRPC) and 4318 (HTTP), and 30-day block retention.
+  - Provisioned Grafana datasources (`infra/grafana/provisioning/datasources/datasources.yml`) and dashboards (`infra/grafana/provisioning/dashboards/dashboards.yml`).
+  - Created initial operational overview dashboard (`infra/grafana/dashboards/agentops-overview.json`) with panels for run rate, error ratio, p50/p95 duration, token consumption, tool/LLM rates, ingestion latency, and pipeline health.
+  - Updated `infra/docker-compose.yml` to define the full local stack (PostgreSQL, Backend, Prometheus, Tempo, Grafana) with pinned container versions and zero committed secrets.
+  - Authored comprehensive observability guide (`docs/observability.md`) covering data flow, architecture, ports, metrics catalog, label safety, sampling, failure behaviour, local startup, manual verification, and troubleshooting.
+  - Added full test coverage for metrics, tracing, and static infra configurations.
+- **Files added/modified:**
+  - Added: `backend/agentops_backend/metrics.py`, `tracing.py`, `observability.py`
+  - Added: `backend/tests/test_metrics.py`, `test_tracing.py`, `test_infra_config.py`
+  - Added: `infra/prometheus/prometheus.yml`, `infra/tempo/tempo.yml`
+  - Added: `infra/grafana/provisioning/datasources/datasources.yml`, `infra/grafana/provisioning/dashboards/dashboards.yml`
+  - Added: `infra/grafana/dashboards/agentops-overview.json`
+  - Added: `docs/observability.md`
+  - Modified: `.env.example`, `backend/pyproject.toml`, `backend/agentops_backend/config.py`, `backend/agentops_backend/ingestion.py`, `backend/agentops_backend/routes.py`, `backend/agentops_backend/main.py`, `infra/docker-compose.yml`, `PROGRESS.md`, `IMPLEMENTATION_STATUS.md`
+- **Commands run and actual results:**
+  - `pip install "prometheus-client>=0.20,<1.0" "opentelemetry-api>=1.27,<2.0" "opentelemetry-sdk>=1.27,<2.0" "opentelemetry-exporter-otlp-proto-http>=1.27,<2.0" pytest pytest-cov httpx requests pyyaml` — PASS (installed in .venv)
+  - `pip install -e "sdk[dev]"` — PASS (responses installed, SDK package editable)
+  - `pytest tests/test_metrics.py` — PASS (18 tests passed)
+  - `pytest tests/test_tracing.py` — PASS (14 tests passed, including real OTLP/HTTP wire export)
+  - `pytest tests/test_infra_config.py` — PASS (13 tests passed, validated compose, scrape configs, and dashboard metric queries)
+  - `pytest --cov=agentops_backend --cov-report=term-missing` (backend) — PASS (134 passed, 95% test coverage)
+  - `pytest sdk/tests` (sdk) — PASS (3 passed, 86% test coverage)
+  - `docker --version` — BLOCKED (Docker CLI is not installed on the Windows host environment)
+- **Tests added/updated:**
+  - `tests/test_metrics.py`: 18 tests (metric names/types, label bounding/privacy, lifecycle counting, failure accounting, duplicate idempotency, rejection categorization, /metrics auth, fault isolation)
+  - `tests/test_tracing.py`: 14 tests (root/child span correlation to run history, failure status propagation, request span emission, out-of-order event handling, attribute sanitization, error-preserving sampling, exporter fault tolerance, real OTLP/HTTP wire export)
+  - `tests/test_infra_config.py`: 13 tests (compose service definitions, pinned images, secret hygiene, published ports, Prometheus scrape configuration, Tempo receiver ports and retention, Grafana datasources, dashboard queries against real metrics, bounded query grouping)
+- **Acceptance criteria evidence:**
+  - Metrics reflect actual test runs: ✅ (`tests/test_metrics.py::test_counters_reflect_a_successful_run`, `test_failed_run_counts_as_error`, `test_llm_and_tool_failures_and_reported_durations`)
+  - Prometheus scrapes the intended targets: ✅ (`tests/test_metrics.py::test_metrics_open_in_development_without_token`, `tests/test_infra_config.py::test_prometheus_scrapes_backend_with_token_file`)
+  - Detailed traces can be retrieved from chosen backend: ✅ (`tests/test_tracing.py::test_spans_are_exported_over_real_otlp_http` verifies real OTLP/HTTP protobuf export)
+  - Trace and run identifiers can be correlated: ✅ (`tests/test_tracing.py::test_run_exports_root_and_child_spans_correlated_to_run`)
+  - Local developer can start observability stack from documented commands: ✅ (`docs/observability.md`, `infra/docker-compose.yml`, `tests/test_infra_config.py`)
+- **Decisions/assumptions:**
+  - SDK remains free from direct OpenTelemetry dependencies; the backend materializes correlated spans from accepted telemetry events using the SDK-provided trace and span IDs.
+  - Backend uses an isolated `CollectorRegistry` instance to prevent global registry pollution across tests and process instances.
+  - Traces are exported asynchronously via a bounded queue; trace exporter failures never crash or block the ingestion pipeline.
+  - Spans of error runs/calls are always exported regardless of sample ratio.
+  - Default retention: Tempo traces 30 days (`block_retention: 720h`), Prometheus 30 days (`retention.time=30d`), PostgreSQL runs 90 days.
+- **Blockers/known limitations:**
+  - Docker CLI is not installed on the Windows host environment; live container deployment was validated via static compose/config testing and in-process real OTLP HTTP receiver tests. Full container execution is cataloged in the manual verification checklist.
+- **Human verification steps:**
+  - Follow the manual verification checklist in `docs/observability.md` (or the end-of-phase report below).
+- **Status at end:** `READY_FOR_REVIEW`
+- **Human approval:** None yet.
+- **Next permitted action:** Await human owner review and explicit approval of Phase 4 before beginning Phase 5.
+
 ## Append-only session entry template
 
 Copy this section for each meaningful work session and fill it with observed facts.

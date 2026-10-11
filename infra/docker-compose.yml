@@ -1,6 +1,8 @@
-# Local development stack (Phase 3: backend + PostgreSQL only).
-# Prometheus/Tempo/Grafana arrive in later phases.
-# Required env (see ../.env.example): POSTGRES_PASSWORD, AGENTOPS_SECRET_KEY, AGENTOPS_ADMIN_TOKEN
+# Local development stack: backend + PostgreSQL + Prometheus + Tempo + Grafana.
+# Required env (see ../.env.example): POSTGRES_PASSWORD, AGENTOPS_SECRET_KEY,
+# AGENTOPS_ADMIN_TOKEN, AGENTOPS_METRICS_TOKEN, GRAFANA_ADMIN_PASSWORD
+# See ../docs/observability.md for ports, data flow and troubleshooting.
+# NOTE: observability services are for local development (no TLS, local disk).
 services:
   postgres:
     image: postgres:16
@@ -29,11 +31,66 @@ services:
       AGENTOPS_ENV: ${AGENTOPS_ENV:-development}
       AGENTOPS_SECRET_KEY: ${AGENTOPS_SECRET_KEY:?set AGENTOPS_SECRET_KEY in .env}
       AGENTOPS_ADMIN_TOKEN: ${AGENTOPS_ADMIN_TOKEN:?set AGENTOPS_ADMIN_TOKEN in .env}
+      AGENTOPS_METRICS_TOKEN: ${AGENTOPS_METRICS_TOKEN:?set AGENTOPS_METRICS_TOKEN in .env}
+      # Trace export is best-effort: the backend does NOT depend on Tempo being up.
+      AGENTOPS_OTLP_ENDPOINT: ${AGENTOPS_OTLP_ENDPOINT:-http://tempo:4318/v1/traces}
+      AGENTOPS_TRACE_SAMPLE_RATIO: ${AGENTOPS_TRACE_SAMPLE_RATIO:-1.0}
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
 
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    # The bearer token is written to a file at start so it never sits in a config file.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        printf '%s' "$$AGENTOPS_METRICS_TOKEN" > /tmp/agentops_metrics_token &&
+        exec /bin/prometheus
+        --config.file=/etc/prometheus/prometheus.yml
+        --storage.tsdb.path=/prometheus
+        --storage.tsdb.retention.time=30d
+    environment:
+      AGENTOPS_METRICS_TOKEN: ${AGENTOPS_METRICS_TOKEN:?set AGENTOPS_METRICS_TOKEN in .env}
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    volumes:
+      - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempodata:/var/tempo
+    ports:
+      - "3200:3200"   # Tempo HTTP API
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+
 volumes:
   pgdata:
+  promdata:
+  tempodata:
+  grafanadata:
