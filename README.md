@@ -20,16 +20,20 @@ Instrument your AI agents, collect telemetry, monitor metrics, explore traces, s
 
 ## Project Status
 
-**Phase 1 of 10 — Architecture & Planning** → `READY_FOR_REVIEW`
+**Phase 4 of 10 — Metrics, Prometheus, and Trace Export Pipeline** → `READY_FOR_REVIEW`
 
-See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for current state.
+- **Completed & Approved:** Phase 1 (Architecture & Planning), Phase 2 (Core SDK & Instrumentation), Phase 3 (Ingestion API & Persistence).
+- **Current Phase:** Phase 4 (Metrics, Prometheus, and Trace Export Pipeline) implemented, tested, and awaiting owner approval.
+- **Next Phase:** Phase 5 (Trace Details and Run History).
+
+See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [PROGRESS.md](PROGRESS.md) for full details.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | SDK & Backend | Python, FastAPI, Pydantic |
-| Database | PostgreSQL |
+| Database | PostgreSQL (SQLite for tests/local) |
 | Metrics | Prometheus |
 | Tracing | OpenTelemetry + Grafana Tempo |
 | Dashboards | Grafana + React/TypeScript |
@@ -41,6 +45,9 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for current state.
 
 - [Architecture](docs/architecture.md)
 - [Telemetry Schema](docs/telemetry-schema.md)
+- [Observability Guide](docs/observability.md)
+- [API Documentation](docs/api.md)
+- [Data Model](docs/data-model.md)
 - [Implementation Plan](docs/implementation-plan.md)
 - [Testing Strategy](docs/testing-strategy.md)
 - [Assumptions & Decisions](docs/assumptions-and-decisions.md)
@@ -50,15 +57,16 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for current state.
 
 ## Quick Start
 
-> ⚠️ No runnable code yet — currently in architecture/planning phase.
-
 ```bash
 # Clone and configure
 cp .env.example .env
 # Edit .env with your values
 
-# (Future) Start local development stack
-docker compose up -d
+# Start local development stack (PostgreSQL, Prometheus, Tempo, Grafana)
+docker compose -f infra/docker-compose.yml up -d
+
+# Start backend locally
+uvicorn agentops_backend.main:app --reload
 ```
 
 ## License

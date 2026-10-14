@@ -6,7 +6,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 1 — Repository Discovery, Architecture, and Implementation Plan
 
-**Status:** `IN_PROGRESS`
+**Status:** `APPROVED`
 
 - [X] Inspect repository files, directory structure, and existing code
 - [X] Inspect PRD/SRS and architecture documents
@@ -70,20 +70,20 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 4 — Metrics, Prometheus, and Trace Export Pipeline
 
-**Status:** `NOT_STARTED`
+**Status:** `READY_FOR_REVIEW`
 
-- [ ] Backend service metrics instrumentation
-- [ ] Application metrics (runs, durations, LLM/tool ops, ingestion health)
-- [ ] Bounded label review
-- [ ] Prometheus metrics endpoint
-- [ ] Prometheus scrape config
-- [ ] OTel tracing for backend requests
-- [ ] Span naming + attribute consistency
-- [ ] Tempo trace export config
-- [ ] Trace retention + sampling defaults
-- [ ] Grafana provisioning (datasources + initial dashboards)
-- [ ] Telemetry pipeline failure isolation
-- [ ] Documentation (ports, data flow, troubleshooting)
+- [X] Backend service metrics instrumentation
+- [X] Application metrics (runs, durations, LLM/tool ops, ingestion health)
+- [X] Bounded label review
+- [X] Prometheus metrics endpoint
+- [X] Prometheus scrape config
+- [X] OTel tracing for backend requests
+- [X] Span naming + attribute consistency
+- [X] Tempo trace export config
+- [X] Trace retention + sampling defaults
+- [X] Grafana provisioning (datasources + initial dashboards)
+- [X] Telemetry pipeline failure isolation
+- [X] Documentation (ports, data flow, troubleshooting)
 
 ---
 
