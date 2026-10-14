@@ -5,10 +5,10 @@
 ## Project snapshot
 
 - **Project:** AgentOps MCP
-- **Current phase:** Phase 4 — Metrics, Prometheus, and Trace Export Pipeline
-- **Current status:** READY_FOR_REVIEW
-- **Last human-approved phase:** Phase 3
-- **Next permitted action:** Await human owner review and explicit approval of Phase 4 before beginning Phase 5.
+- **Current phase:** Phase 5 — Trace Details and Run History
+- **Current status:** NOT_STARTED
+- **Last human-approved phase:** Phase 4
+- **Next permitted action:** Begin Phase 5 implementation according to `implementation.md` upon instruction.
 - **Source of detailed requirements:** `implementation.md` plus approved PRD/SRS and architecture decisions.
 
 ## Phase checklist
@@ -20,8 +20,8 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 | 1 | Repository Discovery, Architecture, and Implementation Plan | APPROVED | Approved by owner |
 | 2 | Core SDK and First Instrumentation Adapter | APPROVED | Approved by owner |
 | 3 | Ingestion API, Persistence, and Query Services | APPROVED | Approved by owner |
-| 4 | Metrics, Prometheus, and Trace Export Pipeline | READY_FOR_REVIEW | Implementation complete, 134 backend tests passing, awaiting human approval |
-| 5 | Trace Details and Run History | NOT_STARTED | Requires explicit approval of Phase 4 |
+| 4 | Metrics, Prometheus, and Trace Export Pipeline | APPROVED | Approved by owner |
+| 5 | Trace Details and Run History | NOT_STARTED | Authorized to begin |
 | 6 | Monitoring Dashboard | NOT_STARTED | Requires explicit approval of Phase 5 |
 | 7 | MCP Server and Read-Only Monitoring Tools | NOT_STARTED | Requires explicit approval of Phase 6 |
 | 8 | AI Diagnostic Assistant | NOT_STARTED | Requires explicit approval of Phase 7 |
@@ -272,6 +272,24 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Status at end:** `READY_FOR_REVIEW`
 - **Human approval:** None yet for Phase 4.
 - **Next permitted action:** Await human owner review and explicit approval of Phase 4 before beginning Phase 5.
+
+### 2026-10-14 — Phase 4: Owner Review & Explicit Approval
+- **Status at start:** `READY_FOR_REVIEW`
+- **Work performed:**
+  - Owner confirmed and granted explicit approval for Phase 4.
+  - Recorded Phase 4 approval across `IMPLEMENTATION_STATUS.md` and `PROGRESS.md`.
+  - Advanced active project gate to Phase 5: Trace Details and Run History (`NOT_STARTED`).
+- **Files modified:**
+  - `IMPLEMENTATION_STATUS.md`, `PROGRESS.md`
+- **Commands run and actual results:** None needed (documentation and state gate recording).
+- **Tests added/updated:** None.
+- **Acceptance criteria evidence:** Phase 4 acceptance criteria previously verified with 134 passing backend tests and 3 SDK tests. Owner reviewed and approved.
+- **Decisions/assumptions:** Phase 4 officially marked `APPROVED`. Phase 5 transition authorized.
+- **Blockers/known limitations:** None.
+- **Human verification steps:** Verify `IMPLEMENTATION_STATUS.md` and `PROGRESS.md` reflect Phase 4 `APPROVED` and Phase 5 `NOT_STARTED`.
+- **Status at end:** `APPROVED` (Phase 4), `NOT_STARTED` (Phase 5).
+- **Human approval:** Explicitly approved by owner on 2026-10-14.
+- **Next permitted action:** Implement Phase 5 — Trace Details and Run History when instructed.
 
 ## Append-only session entry template
 
