@@ -7,12 +7,13 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from agentops_backend import ingestion, queries, registry
+from agentops_backend import ingestion, queries, registry, trace_service
 from agentops_backend.auth import (
     Principal,
     _bearer_token,
@@ -30,6 +31,7 @@ from agentops_backend.schemas import (
     AgentOut,
     ApiKeyCreate,
     ApiKeyCreated,
+    CorrelationLinks,
     ErrorSummaryOut,
     IngestResult,
     ProjectCreate,
@@ -37,6 +39,8 @@ from agentops_backend.schemas import (
     RunDetailOut,
     RunListOut,
     RunStatus,
+    RunTimelineOut,
+    SpanOut,
 )
 
 health_router = APIRouter(prefix="/health", tags=["health"])
@@ -223,6 +227,115 @@ def get_error_summary(
     after, before = _range(started_after, started_before)
     return queries.error_summary(
         session, project_id, agent_id=agent_id, started_after=after, started_before=before
+    )
+
+
+# ---- Phase 5: trace details and run history -------------------------------- #
+
+@query_router.get(
+    "/{project_id}/runs/{run_id}/timeline",
+    response_model=RunTimelineOut,
+    summary="Run timeline (Phase 5)",
+    description=(
+        "Returns the full explainable timeline for a single run, including "
+        "assembled spans in parent-child order, raw paginated events, "
+        "completeness flags, and cross-signal correlation links."
+    ),
+)
+def get_run_timeline(
+    project_id: str,
+    run_id: str,
+    # Span pagination
+    max_spans: int = Query(
+        default=trace_service.MAX_SPANS_PER_TRACE,
+        ge=1,
+        le=trace_service.MAX_SPANS_PER_TRACE,
+        description="Maximum number of spans to return.",
+    ),
+    # Event pagination (independent of spans)
+    event_page: int = Query(default=1, ge=1),
+    event_page_size: int = Query(
+        default=100, ge=1, le=trace_service.MAX_EVENTS_PER_PAGE
+    ),
+    principal: Principal = Depends(require_scope("read")),
+    session: Session = Depends(get_session),
+    request: Request = None,  # type: ignore[assignment]
+) -> RunTimelineOut:
+    _scoped(principal, project_id)
+    settings = request.app.state.settings
+    result = trace_service.get_run_timeline(
+        session,
+        project_id,
+        run_id,
+        include_payload_summary=settings.payload_capture_enabled,
+        max_spans=max_spans,
+        event_page=event_page,
+        event_page_size=event_page_size,
+        otlp_base_url=settings.otlp_ui_base_url,
+        trace_retention_days=settings.trace_retention_days,
+        run_retention_days=settings.run_retention_days,
+    )
+    # Serialise SpanInfo objects (not Pydantic) → SpanOut
+    spans_out = [
+        SpanOut(
+            span_id=s.span_id,
+            parent_span_id=s.parent_span_id,
+            name=s.name,
+            event_id=s.event_id,
+            event_type=s.event_type,
+            start_time=s.start_time,
+            end_time=s.end_time,
+            duration_ms=s.duration_ms,
+            status=s.status,
+            attributes=s.attributes,
+            parent_missing=s.parent_missing,
+        )
+        for s in result.spans
+    ]
+    cl = result.correlation_links
+    return RunTimelineOut(
+        run=result.run,
+        is_complete=result.is_complete,
+        trace_data_may_have_expired=result.trace_data_may_have_expired,
+        spans=spans_out,
+        spans_truncated=result.spans_truncated,
+        span_count=len(spans_out),
+        events=result.events,
+        total_event_count=result.total_event_count,
+        event_page=result.event_page,
+        event_page_size=result.event_page_size,
+        trace_link=result.trace_link,
+        correlation_links=CorrelationLinks(
+            run_id=cl["run_id"],
+            trace_id=cl["trace_id"],
+            root_span_id=cl["root_span_id"],
+            run_metadata_expires_at=cl["run_metadata_expires_at"],
+            trace_data_expires_at=cl["trace_data_expires_at"],
+            metric_window=cl.get("metric_window"),
+        ),
+    )
+
+
+@query_router.get(
+    "/{project_id}/runs/by-trace/{trace_id}",
+    summary="Look up run by OTLP trace ID (Phase 5)",
+    description=(
+        "Redirects (307) to the run detail endpoint for the run whose "
+        "OpenTelemetry trace_id matches the given value. Useful for jumping "
+        "from a Tempo / Jaeger trace to the AgentOps run record."
+    ),
+)
+def get_run_by_trace_id(
+    project_id: str,
+    trace_id: str,
+    principal: Principal = Depends(require_scope("read")),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    _scoped(principal, project_id)
+    run = trace_service.get_run_by_trace_id(session, project_id, trace_id)
+    return RedirectResponse(
+        url=f"/v1/projects/{project_id}/runs/{run.run_id}/timeline",
+        status_code=307,
     )
 
 

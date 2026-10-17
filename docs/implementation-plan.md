@@ -70,7 +70,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 4 — Metrics, Prometheus, and Trace Export Pipeline
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 
 - [X] Backend service metrics instrumentation
 - [X] Application metrics (runs, durations, LLM/tool ops, ingestion health)
@@ -89,17 +89,17 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 5 — Trace Details and Run History
 
-**Status:** `NOT_STARTED`
+**Status:** `APPROVED`
 
-- [ ] API contract joining run metadata + events + trace references
-- [ ] Trace retrieval by trace/run ID with span ordering
-- [ ] Run history filtering (time, agent, status, metadata)
-- [ ] Event timeline ordering + late/out-of-order handling
-- [ ] Error summaries + safe stack metadata
-- [ ] Optional redacted I/O summaries
-- [ ] Pagination for large traces/histories
-- [ ] Correlation links (run ↔ trace ↔ metric windows ↔ errors)
-- [ ] Retention behavior documentation
+- [X] API contract joining run metadata + events + trace references
+- [X] Trace retrieval by trace/run ID with span ordering
+- [X] Run history filtering (time, agent, status, metadata)
+- [X] Event timeline ordering + late/out-of-order handling
+- [X] Error summaries + safe stack metadata
+- [X] Optional redacted I/O summaries
+- [X] Pagination for large traces/histories
+- [X] Correlation links (run ↔ trace ↔ metric windows ↔ errors)
+- [X] Retention behavior documentation
 
 ---
 

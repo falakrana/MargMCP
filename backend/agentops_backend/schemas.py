@@ -193,3 +193,62 @@ class ErrorSummaryOut(BaseModel):
     total_runs: int
     error_runs: int
     groups: list[ErrorGroup]
+
+
+# --------------------------------------------------------------------------- #
+# Phase 5 — Trace Details and Run History
+# --------------------------------------------------------------------------- #
+
+class SpanOut(BaseModel):
+    """One assembled span in the run timeline."""
+
+    span_id: str
+    parent_span_id: Optional[str] = None
+    name: str
+    event_id: str  # empty string for the synthesised root span
+    event_type: str
+    start_time: datetime
+    end_time: datetime
+    duration_ms: Optional[int] = None
+    status: str  # "ok" | "error" | "cancelled" | "running"
+    attributes: dict[str, Any]
+    # True when this span references a parent that is not in the result set
+    # (e.g. the parent arrived in a different paginated batch or was missing).
+    parent_missing: bool = False
+
+
+class CorrelationLinks(BaseModel):
+    """Cross-signal links for a single run."""
+
+    run_id: str
+    trace_id: str
+    root_span_id: str
+    # ISO-8601; after this timestamp the run record (events table) may be gone.
+    run_metadata_expires_at: str
+    # ISO-8601; after this timestamp the OTLP backend may have purged the trace.
+    trace_data_expires_at: str
+    # Half-open UTC window that covers this run in Prometheus/metric queries.
+    metric_window: Optional[dict[str, str]] = None
+
+
+class RunTimelineOut(BaseModel):
+    """Full explainable timeline for one run (Phase 5 primary response)."""
+
+    run: RunOut
+    # False when the run has no terminal event or ended_at is still NULL.
+    is_complete: bool
+    # True when the run started more than ``trace_retention_days`` ago;
+    # the local timeline is still served but the OTLP backend may return nothing.
+    trace_data_may_have_expired: bool
+    # Span tree assembled from local event storage.
+    spans: list[SpanOut]
+    spans_truncated: bool
+    span_count: int
+    # Raw event page (independent pagination from spans).
+    events: list[EventOut]
+    total_event_count: int
+    event_page: int
+    event_page_size: int
+    # Deep-link into the configured OTLP UI; None when no UI URL is configured.
+    trace_link: Optional[str] = None
+    correlation_links: CorrelationLinks

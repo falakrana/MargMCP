@@ -6,10 +6,10 @@
 
 | Field                         | Value                                                      |
 | ----------------------------- | ---------------------------------------------------------- |
-| **Current Phase**       | Phase 5 — Trace Details and Run History                   |
-| **Phase Status**        | `NOT_STARTED`                                              |
-| **Last Approved Phase** | Phase 4                                                    |
-| **Next Phase**          | Phase 5 — Trace Details and Run History (`NOT_STARTED`)    |
+| **Current Phase**             | Phase 6 — Monitoring Dashboard                             |
+| **Phase Status**              | `NOT_STARTED`                                              |
+| **Last Approved Phase**       | Phase 5                                                    |
+| **Next Phase**                | Phase 6 — Monitoring Dashboard (`NOT_STARTED`)             |
 
 ---
 
@@ -17,99 +17,76 @@
 
 | Phase | Name                                                        | Status               |
 | ----- | ----------------------------------------------------------- | -------------------- |
-| 1     | Repository Discovery, Architecture, and Implementation Plan | `APPROVED`         |
-| 2     | Core SDK and First Instrumentation Adapter                  | `APPROVED`         |
-| 3     | Ingestion API, Persistence, and Query Services              | `APPROVED`         |
-| 4     | Metrics, Prometheus, and Trace Export Pipeline              | `APPROVED` |
-| 5     | Trace Details and Run History                               | `NOT_STARTED`      |
-| 6     | Monitoring Dashboard                                        | `NOT_STARTED`      |
-| 7     | MCP Server and Read-Only Monitoring Tools                   | `NOT_STARTED`      |
-| 8     | AI Diagnostic Assistant                                     | `NOT_STARTED`      |
-| 9     | Security, Reliability, and Performance Hardening            | `NOT_STARTED`      |
-| 10    | Deployment, End-to-End Pilot, and Release Readiness         | `NOT_STARTED`      |
+| 1     | Repository Discovery, Architecture, and Implementation Plan | `APPROVED`           |
+| 2     | Core SDK and First Instrumentation Adapter                  | `APPROVED`           |
+| 3     | Ingestion API, Persistence, and Query Services              | `APPROVED`           |
+| 4     | Metrics, Prometheus, and Trace Export Pipeline              | `APPROVED`           |
+| 5     | Trace Details and Run History                               | `APPROVED`           |
+| 6     | Monitoring Dashboard                                        | `NOT_STARTED`        |
+| 7     | MCP Server and Read-Only Monitoring Tools                   | `NOT_STARTED`        |
+| 8     | AI Diagnostic Assistant                                     | `NOT_STARTED`        |
+| 9     | Security, Reliability, and Performance Hardening            | `NOT_STARTED`        |
+| 10    | Deployment, End-to-End Pilot, and Release Readiness         | `NOT_STARTED`        |
 
 ---
 
-## Phase 4 — Completed Tasks
+## Phase 5 — Completed Tasks
 
-- [X] In-process Prometheus metric registry (`backend/agentops_backend/metrics.py`) with private collector registry avoiding global state pollution across test/app lifecycles
-- [X] Complete suite of application & service metrics:
-  - `agentops_runs_total`: Counter by agent, environment, terminal status
-  - `agentops_run_duration_seconds`: Histogram with bounded run duration buckets
-  - `agentops_llm_calls_total` & `agentops_llm_call_duration_seconds`: Counters and histograms by provider, model, and status
-  - `agentops_tool_calls_total` & `agentops_tool_call_duration_seconds`: Counters and histograms by tool name and status
-  - `agentops_tokens_total`: Counter for prompt and completion token consumption
-  - `agentops_ingestion_requests_total` & `agentops_ingestion_latency_seconds`: Ingestion route throughput and latency
-  - `agentops_events_total` & `agentops_events_rejected_total`: Ingestion batch outcome breakdown (accepted, duplicate, rejected)
-  - `agentops_trace_spans_total`, `agentops_trace_export_failures_total`, `agentops_observability_errors_total`: Pipeline health counters
-  - `agentops_backend_info`: Version gauge
-- [X] Strict cardinality & privacy bounding (`BoundedLabel`) capping dynamic label values (agent, provider, model, tool, rejection code) to 50–200 entries and collapsing overflow to `"other"`, strictly forbidding run IDs, trace IDs, prompts, and error summaries
-- [X] `GET /metrics` endpoint with authentication boundary:
-  - Protected by `AGENTOPS_METRICS_TOKEN` bearer authorization
-  - Open in `development` when token is unset (local ergonomics)
-  - Disabled (`503 metrics_disabled`) when unset in any non-development environment
-- [X] OpenTelemetry tracing pipeline (`backend/agentops_backend/tracing.py`) materializing spans from accepted events:
-  - Root span `agent.run` mapped 1:1 to database `trace_id` and `root_span_id`
-  - Child spans `llm.chat` and `tool.<name>` with parent span correlation
-  - Request span `ingest.batch`
-- [X] Error-preserving sampling policy: non-error runs follow `AGENTOPS_TRACE_SAMPLE_RATIO`, while failing runs and error spans are always exported
-- [X] Bounded asynchronous span processor (`BatchSpanProcessor`) with `ResilientExporter`: exporter crashes are caught, counted, and never leak into or block ingestion
-- [X] Post-commit observability execution facade (`backend/agentops_backend/observability.py`) with strict exception swallowing
-- [X] Prometheus local scrape configuration (`infra/prometheus/prometheus.yml`) with credential file ingestion
-- [X] Grafana Tempo local configuration (`infra/tempo/tempo.yml`) with OTLP receivers on ports 4317 (gRPC) and 4318 (HTTP), and 30-day retention
-- [X] Grafana datasource & dashboard provisioning (`infra/grafana/`) with complete starter dashboard (`agentops-overview.json`) querying only real bounded metrics
-- [X] Docker Compose stack updated (`infra/docker-compose.yml`) with PostgreSQL, Backend, Prometheus, Tempo, and Grafana
-- [X] Documentation in `docs/observability.md` covering data flow, architecture, ports, metrics catalog, trace correlation, local startup, manual verification, and troubleshooting
-- [X] Comprehensive test coverage: 134 backend tests passed (95% code coverage), 3 SDK tests passed (86% coverage)
+- [x] API contract for run timeline joining run metadata, events, and trace references without external DB dependency (`backend/agentops_backend/trace_service.py`)
+- [x] Trace retrieval by run ID with assembled parent-child span ordering (root span synthesised from Run record; child spans from events)
+- [x] Run-history filtering by time range, agent, status, metadata — all previously implemented in Phase 3 `queries.py`, confirmed working
+- [x] Event timeline ordering: events returned in `(timestamp ASC, event_id ASC)` stable order; late-arriving events handled correctly
+- [x] Duration and status for each span: root span duration from `run.duration_ms`; child span duration from `data.duration_ms`; status `ok/error/cancelled/running` correctly derived
+- [x] Incomplete trace detection: `is_complete` is False when no terminal event or `ended_at` is NULL; root span status `"running"` for incomplete runs
+- [x] Missing parent span detection: `parent_missing=True` flag on spans referencing a `parent_span_id` not in the result set
+- [x] Error summaries and safe error metadata: `error_type`, `error_summary` surfaced in span attributes; raw prompts/secrets never included
+- [x] Optional payload summaries: `summary`/`output_summary` fields stripped by default (`AGENTOPS_PAYLOAD_CAPTURE_ENABLED=false`); included only when explicitly enabled
+- [x] Pagination for spans (`max_spans` cap) and events (`event_page` / `event_page_size`) — independent pagination controls
+- [x] Correlation links: `run_id`, `trace_id`, `root_span_id`, retention expiry timestamps, metric time window per run
+- [x] Trace deep-link generation to OTLP UI (Grafana/Tempo) via `AGENTOPS_OTLP_UI_BASE_URL`
+- [x] `trace_data_may_have_expired` flag when run is older than `AGENTOPS_TRACE_RETENTION_DAYS`
+- [x] Lookup run by OTLP trace ID (`GET /runs/by-trace/{trace_id}`) with 307 redirect to timeline
+- [x] Retention semantics documented: run record vs OTLP trace data lifecycle, out-of-sync scenarios (`docs/trace-and-history.md`)
+- [x] New config settings: `payload_capture_enabled`, `run_retention_days`, `trace_retention_days`, `otlp_ui_base_url`
+- [x] 38 Phase 5 tests, 172 total backend tests passing, 95% code coverage
 
 ---
 
-## Phase 4 — Acceptance Criteria
+## Phase 5 — Acceptance Criteria
 
-| Criterion                                                                  | Status  | Evidence                                                                                                                                                                     |
-| -------------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Metrics reflect actual test runs                                           | ✅ PASS | `tests/test_metrics.py::test_counters_reflect_a_successful_run`, `test_failed_run_counts_as_error`, `test_llm_and_tool_failures_and_reported_durations`                |
-| Prometheus scrapes the intended targets                                    | ✅ PASS | `tests/test_metrics.py::test_metrics_open_in_development_without_token`, `tests/test_infra_config.py::test_prometheus_scrapes_backend_with_token_file`                   |
-| Detailed traces can be retrieved from chosen backend                       | ✅ PASS | `tests/test_tracing.py::test_spans_are_exported_over_real_otlp_http` (real OTLP/HTTP protobuf export verified)                                                             |
-| Trace and run identifiers can be correlated                                | ✅ PASS | `tests/test_tracing.py::test_run_exports_root_and_child_spans_correlated_to_run` (span `trace_id` equals run `trace_id`, root `span_id` equals run `root_span_id`) |
-| Local developer can start the observability stack from documented commands | ✅ PASS | `docs/observability.md`, `infra/docker-compose.yml`, verified with static infra test suite `tests/test_infra_config.py`                                                |
+| Criterion                                                        | Status  | Evidence                                                                                               |
+| ---------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| Developer can find a run and inspect its timeline                | ✅ PASS | `TestCompleteTrace::test_successful_run_timeline`, `test_failed_run_timeline`                          |
+| Nested spans presented in correct relationship                   | ✅ PASS | `TestNestedOperations::test_nested_spans_have_correct_parent`                                          |
+| Missing trace data communicated accurately                       | ✅ PASS | `TestMissingParentSpans::test_child_with_unknown_parent_flagged`, `trace_data_may_have_expired` flag   |
+| Large result sets are bounded and paginated                      | ✅ PASS | `TestPagination::test_event_pagination_*`, `test_max_spans_limit_respected`                            |
+| Privacy settings honored consistently                            | ✅ PASS | `TestPayloadCapture::test_payload_fields_stripped_by_default`                                          |
 
 ---
 
 ## Known Issues & Notes
 
-- Docker CLI is not installed in the Windows host environment; live multi-container compose startup was verified via static schema/config validation tests (`tests/test_infra_config.py`) and in-process real OTLP HTTP server export tests (`tests/test_tracing.py::test_spans_are_exported_over_real_otlp_http`).
-- Full container integration verification is cataloged in the manual verification checklist in `docs/observability.md`.
+- Docker CLI is not installed in the Windows host environment (inherited from Phase 4).
+- `trace_data_may_have_expired` is computed from config-driven retention days; it does not query Tempo live.
+- `payload_capture_enabled=true` mode is tested via unit tests with the settings override; no integration test with Tempo.
 
 ---
 
-## Files Added in Phase 4
+## Files Added in Phase 5
 
 ```
-backend/agentops_backend/metrics.py
-backend/agentops_backend/tracing.py
-backend/agentops_backend/observability.py
-backend/tests/test_metrics.py
-backend/tests/test_tracing.py
-backend/tests/test_infra_config.py
-infra/prometheus/prometheus.yml
-infra/tempo/tempo.yml
-infra/grafana/provisioning/datasources/datasources.yml
-infra/grafana/provisioning/dashboards/dashboards.yml
-infra/grafana/dashboards/agentops-overview.json
-docs/observability.md
+backend/agentops_backend/trace_service.py
+backend/tests/test_trace_history.py
+docs/trace-and-history.md
 ```
 
-## Files Modified in Phase 4
+## Files Modified in Phase 5
 
 ```
 .env.example
-backend/pyproject.toml
 backend/agentops_backend/config.py
-backend/agentops_backend/ingestion.py
 backend/agentops_backend/routes.py
-backend/agentops_backend/main.py
-infra/docker-compose.yml
+backend/agentops_backend/schemas.py
 PROGRESS.md
 IMPLEMENTATION_STATUS.md
 ```

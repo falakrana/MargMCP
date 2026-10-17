@@ -53,6 +53,20 @@ class Settings(BaseSettings):
     trace_queue_size: int = Field(default=2048, ge=1)
     trace_export_timeout_seconds: int = Field(default=5, ge=1)
 
+    # ---- Phase 5: trace details and run history ----
+    # When True, optional payload summaries (output_summary etc.) may be
+    # included in timeline responses. Off by default to protect privacy.
+    payload_capture_enabled: bool = False
+    # How many days run records (runs + events tables) are kept.
+    run_retention_days: int = Field(default=90, ge=1)
+    # How many days the OTLP trace backend (Tempo) retains traces.
+    # Used only for ``trace_data_may_have_expired`` computation; this service
+    # does not enforce Tempo's retention policy.
+    trace_retention_days: int = Field(default=30, ge=1)
+    # Base URL of the Grafana / OTLP UI used to generate deep-links.
+    # Example: http://localhost:3000
+    otlp_ui_base_url: Optional[str] = None
+
     postgres_host: str = Field(default="localhost", validation_alias="POSTGRES_HOST")
     postgres_port: int = Field(default=5432, validation_alias="POSTGRES_PORT")
     postgres_db: str = Field(default="agentops", validation_alias="POSTGRES_DB")

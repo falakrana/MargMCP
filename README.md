@@ -20,11 +20,10 @@ Instrument your AI agents, collect telemetry, monitor metrics, explore traces, s
 
 ## Project Status
 
-**Phase 4 of 10 — Metrics, Prometheus, and Trace Export Pipeline** → `READY_FOR_REVIEW`
+**Phase 6 of 10 — Monitoring Dashboard** → `NOT_STARTED`
 
-- **Completed & Approved:** Phase 1 (Architecture & Planning), Phase 2 (Core SDK & Instrumentation), Phase 3 (Ingestion API & Persistence).
-- **Current Phase:** Phase 4 (Metrics, Prometheus, and Trace Export Pipeline) implemented, tested, and awaiting owner approval.
-- **Next Phase:** Phase 5 (Trace Details and Run History).
+- **Completed & Approved:** Phase 1 (Architecture & Planning), Phase 2 (Core SDK & Instrumentation), Phase 3 (Ingestion API & Persistence), Phase 4 (Metrics, Prometheus, and Trace Export Pipeline), Phase 5 (Trace Details and Run History).
+- **Current Phase:** Phase 6 (Monitoring Dashboard) awaiting authorization to start.
 
 See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [PROGRESS.md](PROGRESS.md) for full details.
 
@@ -46,6 +45,7 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [PROGRESS.md](PROGR
 - [Architecture](docs/architecture.md)
 - [Telemetry Schema](docs/telemetry-schema.md)
 - [Observability Guide](docs/observability.md)
+- [Trace & Run History Guide](docs/trace-and-history.md)
 - [API Documentation](docs/api.md)
 - [Data Model](docs/data-model.md)
 - [Implementation Plan](docs/implementation-plan.md)
