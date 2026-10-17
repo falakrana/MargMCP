@@ -44,3 +44,4 @@ if __name__ == "__main__":
     # Flush remaining telemetry before exiting
     print("\nShutting down SDK...")
     agentops.shutdown()
+    time.sleep(2)

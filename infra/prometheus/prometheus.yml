@@ -11,7 +11,7 @@ scrape_configs:
     metrics_path: /metrics
     authorization:
       type: Bearer
-      credentials_file: /etc/prometheus/agentops_metrics_token
+      credentials_file: /tmp/agentops_metrics_token
     static_configs:
       - targets: ["host.docker.internal:8000"]
 
