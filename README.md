@@ -20,10 +20,10 @@ Instrument your AI agents, collect telemetry, monitor metrics, explore traces, s
 
 ## Project Status
 
-**Phase 6 of 10 — Monitoring Dashboard** → `NOT_STARTED`
+**Phase 6 of 10 — Monitoring Dashboard** → `READY_FOR_REVIEW`
 
 - **Completed & Approved:** Phase 1 (Architecture & Planning), Phase 2 (Core SDK & Instrumentation), Phase 3 (Ingestion API & Persistence), Phase 4 (Metrics, Prometheus, and Trace Export Pipeline), Phase 5 (Trace Details and Run History).
-- **Current Phase:** Phase 6 (Monitoring Dashboard) awaiting authorization to start.
+- **Current Phase:** Phase 6 (Monitoring Dashboard) is implemented and ready for human review.
 
 See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [PROGRESS.md](PROGRESS.md) for full details.
 
@@ -45,6 +45,7 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [PROGRESS.md](PROGR
 - [Architecture](docs/architecture.md)
 - [Telemetry Schema](docs/telemetry-schema.md)
 - [Observability Guide](docs/observability.md)
+- [Monitoring Dashboard Guide](docs/dashboard.md)
 - [Trace & Run History Guide](docs/trace-and-history.md)
 - [API Documentation](docs/api.md)
 - [Data Model](docs/data-model.md)
@@ -67,6 +68,11 @@ docker compose -f infra/docker-compose.yml up -d
 
 # Start backend locally
 uvicorn agentops_backend.main:app --reload
+
+# Start frontend dashboard (in a separate terminal)
+cd frontend
+npm install
+npm run dev
 ```
 
 ## License
