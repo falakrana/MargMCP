@@ -105,22 +105,22 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 6 — Monitoring Dashboard
 
-**Status:** `NOT_STARTED`
+**Status:** `READY_FOR_REVIEW`
 
-- [ ] React + TypeScript setup
-- [ ] Authentication/session handling
-- [ ] App shell + navigation
-- [ ] Overview dashboard page
-- [ ] Projects/agents list + detail pages
-- [ ] Run history with filters + pagination
-- [ ] Run detail + event timeline
-- [ ] Trace/span explorer
-- [ ] Error/failure summary
-- [ ] Settings page
-- [ ] Charts (run volume, success/failure, latency, tokens)
-- [ ] Loading/empty/error states
-- [ ] Accessibility + responsive layout
-- [ ] Frontend tests
+- [X] React + TypeScript setup (Vite 8, React 19, TypeScript 5)
+- [X] Authentication/session handling (AuthContext with Bearer token, session-only storage)
+- [X] App shell + navigation (Minimalist sidebar, responsive container, active route highlighting)
+- [X] Overview dashboard page (KPI stat cards, volume chart, latency chart, status distribution, active agents, recent runs)
+- [X] Projects/agents list + detail pages (Agent directory, search, per-agent metadata & run history)
+- [X] Run history with filters + pagination (Run table, status / agent / environment filters, page navigation)
+- [X] Run detail + event timeline (Hierarchical span waterfall, expandable JSON events, correlation links)
+- [X] Trace/span explorer (Direct index of runs by trace IDs)
+- [X] Error/failure summary (Error frequency breakdown, affected agents, drill-down to filtered runs)
+- [X] Settings page (Project credentials, live health checks, privacy posture, SDK snippets)
+- [X] Charts (Run volume area chart, duration bar chart, status breakdown via Recharts)
+- [X] Loading/empty/error states (Spinner, EmptyState, Alert, SkeletonRows)
+- [X] Accessibility + responsive layout (Semantic HTML, ARIA labels, clean minimalist whitish styling)
+- [X] Frontend tests (Vitest unit tests for utils and API client with 100% pass rate)
 
 ---
 
