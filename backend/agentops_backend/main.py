@@ -7,6 +7,7 @@ from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
@@ -58,6 +59,17 @@ def create_app(settings: Optional[Settings] = None, span_exporter=None) -> FastA
         version=__version__,
         lifespan=lifespan,
     )
+    # CORS: allow the local dashboard dev server in development only.
+    # In production, traffic is expected to go through a reverse proxy that
+    # serves both the frontend and backend from the same origin.
+    if settings.env == "development":
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["http://localhost:3001", "http://127.0.0.1:3001"],
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Authorization", "Content-Type"],
+        )
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = make_session_factory(engine)

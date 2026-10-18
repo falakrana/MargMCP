@@ -4,21 +4,23 @@
 # See ../docs/observability.md for ports, data flow and troubleshooting.
 # NOTE: observability services are for local development (no TLS, local disk).
 services:
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-agentops}
-      POSTGRES_USER: ${POSTGRES_USER:-agentops}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agentops} -d ${POSTGRES_DB:-agentops}"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+  # Local PostgreSQL service is disabled because Neon Postgres (cloud) is used.
+  # Uncomment if running a fully offline database.
+  # postgres:
+  #   image: postgres:16
+  #   environment:
+  #     POSTGRES_DB: ${POSTGRES_DB:-agentops}
+  #     POSTGRES_USER: ${POSTGRES_USER:-agentops}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agentops} -d ${POSTGRES_DB:-agentops}"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 10
 
   backend:
     build: ../backend
@@ -37,9 +39,9 @@ services:
       AGENTOPS_TRACE_SAMPLE_RATIO: ${AGENTOPS_TRACE_SAMPLE_RATIO:-1.0}
     ports:
       - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
 
   prometheus:
     image: prom/prometheus:v2.55.1
@@ -90,7 +92,7 @@ services:
       - tempo
 
 volumes:
-  pgdata:
+  # pgdata:
   promdata:
   tempodata:
   grafanadata:
