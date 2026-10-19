@@ -496,9 +496,9 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
   - Client config uses the common `mcpServers` format and is documented as unverified for any specific client.
 - **Blockers/known limitations:** Docker CLI absent on host (inherited); pre-existing failing infra test above; HTTP transport not covered by automated tests; no MCP rate limiting (Phase 9).
 - **Human verification steps:** Execute the checklist in `docs/mcp-server.md`.
-- **Status at end:** `READY_FOR_REVIEW`
-- **Human approval:** Phase 7 — none yet.
-- **Next permitted action:** Await owner review of Phase 7; do not start Phase 8 until explicitly approved.
+- **Status at end:** `APPROVED`
+- **Human approval:** Explicitly approved by owner on 2026-10-19 ("I have done my testing, approve phase 7. Just update the documentations. Once I say 'Start Phase 8', then start.").
+- **Next permitted action:** Await explicit instruction "Start Phase 8" before starting Phase 8 implementation.
 
 ## Append-only session entry template
 
