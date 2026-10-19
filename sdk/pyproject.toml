@@ -6,8 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "agentops-sdk"
 version = "0.1.0"
 description = "AgentOps MCP Telemetry SDK"
+license = { text = "Apache-2.0" }
 authors = [
-    {name = "AgentOps Team", email = "team@example.com"}
+    {name = "Falak Rana", email = "ranafalak18@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.9"

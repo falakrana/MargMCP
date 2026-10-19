@@ -6,6 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "agentops-backend"
 version = "0.3.0"
 description = "AgentOps MCP ingestion and query API"
+license = { text = "BSL-1.1" }
+authors = [
+    {name = "Falak Rana", email = "ranafalak18@gmail.com"}
+]
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.110",
