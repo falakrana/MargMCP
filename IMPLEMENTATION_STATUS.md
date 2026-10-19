@@ -6,10 +6,10 @@
 
 | Field                         | Value                                                |
 | ----------------------------- | ---------------------------------------------------- |
-| **Current Phase**       | Phase 6 — Monitoring Dashboard                      |
-| **Phase Status**        | `READY_FOR_REVIEW`                                 |
-| **Last Approved Phase** | Phase 5                                              |
-| **Next Phase**          | Phase 7 — MCP Server and Read-Only Monitoring Tools |
+| **Current Phase**       | Phase 7 — MCP Server and Read-Only Monitoring Tools |
+| **Phase Status**        | `APPROVED`                                           |
+| **Last Approved Phase** | Phase 7                                              |
+| **Next Phase**          | Phase 8 — AI Diagnostic Assistant (awaiting start instruction) |
 
 ---
 
@@ -22,8 +22,8 @@
 | 3     | Ingestion API, Persistence, and Query Services              | `APPROVED`         |
 | 4     | Metrics, Prometheus, and Trace Export Pipeline              | `APPROVED`         |
 | 5     | Trace Details and Run History                               | `APPROVED`         |
-| 6     | Monitoring Dashboard                                        | `READY_FOR_REVIEW` |
-| 7     | MCP Server and Read-Only Monitoring Tools                   | `NOT_STARTED`      |
+| 6     | Monitoring Dashboard                                        | `APPROVED`         |
+| 7     | MCP Server and Read-Only Monitoring Tools                   | `APPROVED`         |
 | 8     | AI Diagnostic Assistant                                     | `NOT_STARTED`      |
 | 9     | Security, Reliability, and Performance Hardening            | `NOT_STARTED`      |
 | 10    | Deployment, End-to-End Pilot, and Release Readiness         | `NOT_STARTED`      |
@@ -162,6 +162,59 @@ docs/dashboard.md
 ```
 backend/agentops_backend/main.py
 docs/implementation-plan.md
+PROGRESS.md
+IMPLEMENTATION_STATUS.md
+```
+
+---
+
+## Phase 7 — Completed Tasks
+
+- [X] Official Python MCP SDK (`mcp` 1.30, `FastMCP`) added as bounded dependency `mcp>=1.2,<2.0`; entry point `agentops-mcp` / `python -m agentops_backend.mcp_server`
+- [X] Protocol-independent tool layer `backend/agentops_backend/mcp_tools.py` delegating to shared `queries` / `trace_service` (new shared `queries.agent_metrics`)
+- [X] Seven read-only tools: `list_agents`, `get_agent_metrics`, `list_runs`, `get_run_details`, `get_trace`, `get_error_summary`, `compare_runs` (all annotated `readOnlyHint`)
+- [X] Strict validation: ID pattern, enums, ISO-8601 times, reversed ranges, max window (30d), page/limit caps, `max_spans` cap
+- [X] AuthN/AuthZ on every call: DB-verified API key with `read` scope; project fixed by key; mismatching `project_id` rejected; stdio key from env, HTTP key from `Authorization` header
+- [X] Structured outputs with `kind`, `source` (project, data source, generated_at) and explicit `unavailable` indicators
+- [X] Safe errors (`<code>: <message>`), no stack traces/SQL/secrets; storage failure -> `storage_unavailable`
+- [X] Output safety: no raw event payloads, run metadata hidden unless payload capture enabled, text truncated to 256 chars
+- [X] 42 new tests incl. real MCP stdio client smoke test (`backend/tests/test_mcp.py`)
+- [X] Docs `docs/mcp-server.md` (transport, auth, tools, errors, client config, manual checklist); `.env.example` placeholders
+
+## Phase 7 — Acceptance Criteria
+
+| Criterion                                              | Status  | Evidence                                                                 |
+| ------------------------------------------------------ | ------- | ------------------------------------------------------------------------ |
+| MCP client can connect and list tools                  | ✅ PASS | `TestMcpProtocolSmoke::test_stdio_client_lists_and_calls_tools`         |
+| Each tool returns real AgentOps data via shared services | ✅ PASS | `TestToolOutputs`                                                        |
+| Invalid requests return controlled errors              | ✅ PASS | `TestValidationAndBounds`, `TestFailureModes`                           |
+| Authorization and result limits apply consistently     | ✅ PASS | `TestAuth`, `TestValidationAndBounds`                                   |
+| All tools remain read-only                             | ✅ PASS | `TestReadOnlySurface`                                                    |
+
+## Phase 7 — Known Issues & Notes
+
+- `backend/tests/test_infra_config.py::test_compose_defines_observability_services` FAILS: `infra/docker-compose.yml` has the `postgres` service commented out (owner commit `2d7e924`, Neon in use). Pre-existing; unrelated to Phase 7; not modified.
+- Client config JSON follows the common `mcpServers` convention and is not verified against any specific client; documented as such.
+- Streamable-HTTP transport implemented and documented but only the stdio transport is exercised by the automated smoke test.
+- `get_agent_metrics` is computed from the run store (not live Prometheus queries); duration percentiles use the most recent 10,000 runs (`durations_sampled` flag).
+- No MCP-specific rate limiting (Phase 9).
+
+## Files Added in Phase 7
+
+```
+backend/agentops_backend/mcp_server.py
+backend/agentops_backend/mcp_tools.py
+backend/tests/test_mcp.py
+docs/mcp-server.md
+```
+
+## Files Modified in Phase 7
+
+```
+backend/agentops_backend/config.py
+backend/agentops_backend/queries.py
+backend/pyproject.toml
+.env.example
 PROGRESS.md
 IMPLEMENTATION_STATUS.md
 ```
