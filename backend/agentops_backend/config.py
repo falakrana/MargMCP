@@ -67,6 +67,18 @@ class Settings(BaseSettings):
     # Example: http://localhost:3000
     otlp_ui_base_url: Optional[str] = None
 
+    # ---- Phase 7: MCP server ----
+    # AgentOps API key (needs the 'read' scope) used by the stdio MCP server.
+    # Never logged or returned in tool output. For HTTP transports the
+    # per-request Authorization header takes precedence.
+    mcp_api_key: Optional[str] = None
+    # Default query window (hours) when a tool call omits a time range.
+    mcp_default_window_hours: int = Field(default=24, ge=1)
+    # Maximum permitted query window (days); wider requests are rejected.
+    mcp_max_window_days: int = Field(default=30, ge=1)
+    # Maximum rows returned by any list-style tool call.
+    mcp_max_results: int = Field(default=50, ge=1, le=100)
+
     postgres_host: str = Field(default="localhost", validation_alias="POSTGRES_HOST")
     postgres_port: int = Field(default=5432, validation_alias="POSTGRES_PORT")
     postgres_db: str = Field(default="agentops", validation_alias="POSTGRES_DB")

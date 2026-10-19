@@ -471,7 +471,37 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Human approval:** None yet.
 - **Next permitted action:** Await human owner review and explicit approval of Phase 6 before beginning Phase 7.
 
+### 2026-10-19 — Phase 7: MCP Server and Read-Only Monitoring Tools
+- **Status at start:** Phase 6 `READY_FOR_REVIEW`; clean git working tree.
+- **Owner approval:** Asked whether to approve Phase 6; owner answered "APPROVE PHASE 6 and start Phase 7" in the interactive prompt on 2026-10-19. Phase 6 recorded `APPROVED`; Phase 7 authorized.
+- **Work performed:**
+  - Installed official `mcp` SDK (1.30.0) into `.venv`; declared `mcp>=1.2,<2.0` and `agentops-mcp` script in `backend/pyproject.toml`.
+  - Added `mcp_tools.py` (protocol-independent, authorised, read-only tool layer over `queries` / `trace_service`) and `mcp_server.py` (FastMCP adapter; stdio default, optional streamable-http).
+  - Added shared `queries.agent_metrics`; added `mcp_*` settings to `config.py` and placeholders to `.env.example`.
+  - Seven tools: list_agents, get_agent_metrics, list_runs, get_run_details, get_trace, get_error_summary, compare_runs.
+  - Docs: `docs/mcp-server.md`.
+- **Files added/modified:** see `IMPLEMENTATION_STATUS.md` (Phase 7 sections).
+- **Commands run and actual results:**
+  - `.venv\Scripts\python.exe -m pip install "mcp>=1.2,<2.0"` — PASS (mcp 1.30.0).
+  - `pytest backend/tests/test_mcp.py` (first run) — FAIL: smoke test saw no `structuredContent` because tool return annotation was bare `dict`; fixed by annotating `dict[str, Any]`.
+  - `pytest backend/tests --cov=agentops_backend` — 214 passed, 1 failed; coverage 94% total. The failure is `test_infra_config.py::test_compose_defines_observability_services` (compose `postgres` service commented out in owner commit `2d7e924`); pre-existing, unrelated, left untouched. (Run was executed after the `structuredContent` fix; `test_mcp.py` tests all passed in it.)
+  - Linting/type checking: NOT RUN — no linter/type-checker is configured in the repository.
+- **Tests added/updated:** `backend/tests/test_mcp.py` (42 tests): outputs, auth (missing/invalid/ingest-only/revoked key, cross-project, cross-tenant), validation (IDs, times, windows, page/limit caps), storage and unexpected failures, output safety, read-only surface, real MCP stdio client smoke tests.
+- **Acceptance criteria evidence:** see `IMPLEMENTATION_STATUS.md` Phase 7 table.
+- **Decisions/assumptions:**
+  - `get_agent_metrics` computed from the run store (same source as the dashboard) rather than querying Prometheus.
+  - A key fixes the project; optional `project_id` argument must match it (no cross-project access).
+  - Run `metadata` and raw event data are never returned over MCP unless payload capture is enabled (metadata) / never (event data, payload summaries).
+  - Tool names follow `implementation.md` (e.g. `list_runs`, `get_trace`), not the longer PRD names.
+  - Client config uses the common `mcpServers` format and is documented as unverified for any specific client.
+- **Blockers/known limitations:** Docker CLI absent on host (inherited); pre-existing failing infra test above; HTTP transport not covered by automated tests; no MCP rate limiting (Phase 9).
+- **Human verification steps:** Execute the checklist in `docs/mcp-server.md`.
+- **Status at end:** `READY_FOR_REVIEW`
+- **Human approval:** Phase 7 — none yet.
+- **Next permitted action:** Await owner review of Phase 7; do not start Phase 8 until explicitly approved.
+
 ## Append-only session entry template
+
 
 Copy this section for each meaningful work session and fill it with observed facts.
 

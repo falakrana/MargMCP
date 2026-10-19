@@ -228,3 +228,83 @@ def error_summary(
         select(func.count()).select_from(Run).where(*conds, Run.status == "error")
     ).scalar_one()
     return ErrorSummaryOut(total_runs=total_runs, error_runs=error_runs, groups=groups)
+
+
+def agent_metrics(
+    session: Session,
+    project_id: str,
+    agent_id: str,
+    *,
+    started_after: datetime,
+    started_before: datetime,
+    max_duration_rows: int = 10_000,
+) -> dict:
+    """Aggregate run metrics for one agent over a half-open window.
+
+    Computed from the run store (the same source as the dashboard). Duration
+    percentiles use at most ``max_duration_rows`` most-recent runs;
+    ``durations_sampled`` is True when that cap truncated the sample.
+    """
+    get_agent(session, project_id, agent_id)  # raises 404 for unknown agents
+    conds = [
+        Run.project_id == project_id,
+        Run.agent_id == agent_id,
+        Run.started_at >= started_after,
+        Run.started_at < started_before,
+    ]
+    by_status = {
+        row.status: row.n
+        for row in session.execute(
+            select(Run.status, func.count().label("n")).where(*conds).group_by(Run.status)
+        )
+    }
+    totals = session.execute(
+        select(
+            func.coalesce(func.sum(Run.llm_call_count), 0),
+            func.coalesce(func.sum(Run.tool_call_count), 0),
+            func.coalesce(func.sum(Run.total_prompt_tokens), 0),
+            func.coalesce(func.sum(Run.total_completion_tokens), 0),
+            func.coalesce(func.sum(Run.total_tokens), 0),
+        ).where(*conds)
+    ).one()
+    with_duration = session.execute(
+        select(func.count()).select_from(Run).where(*conds, Run.duration_ms.is_not(None))
+    ).scalar_one()
+    durations = sorted(
+        session.execute(
+            select(Run.duration_ms)
+            .where(*conds, Run.duration_ms.is_not(None))
+            .order_by(Run.started_at.desc())
+            .limit(max_duration_rows)
+        )
+        .scalars()
+        .all()
+    )
+
+    def pct(p: float) -> Optional[int]:
+        if not durations:
+            return None
+        rank = -(-p * len(durations) // 1)  # ceil (nearest-rank method)
+        return int(durations[max(0, min(len(durations) - 1, int(rank) - 1))])
+
+    total = sum(by_status.values())
+    errors = by_status.get("error", 0)
+    finished = total - by_status.get("running", 0)
+    return {
+        "total_runs": total,
+        "runs_by_status": by_status,
+        "error_rate": (errors / finished) if finished else None,
+        "duration_ms": {
+            "avg": (sum(durations) / len(durations)) if durations else None,
+            "p50": pct(0.5),
+            "p95": pct(0.95),
+            "max": int(durations[-1]) if durations else None,
+        },
+        "durations_sampled": with_duration > len(durations),
+        "llm_call_count": int(totals[0]),
+        "tool_call_count": int(totals[1]),
+        "prompt_tokens": int(totals[2]),
+        "completion_tokens": int(totals[3]),
+        "total_tokens": int(totals[4]),
+    }
+
