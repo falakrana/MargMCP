@@ -45,6 +45,7 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [PROGRESS.md](PROGR
 - [Architecture](docs/architecture.md)
 - [Telemetry Schema](docs/telemetry-schema.md)
 - [Observability Guide](docs/observability.md)
+- [SDK Integration Guide](docs/sdk-integration-guide.md)
 - [Monitoring Dashboard Guide](docs/dashboard.md)
 - [Trace & Run History Guide](docs/trace-and-history.md)
 - [API Documentation](docs/api.md)
