@@ -45,7 +45,7 @@ flowchart TD
         Agent["Python AI Agent / LangChain / RAG"]
         SDK["AgentOps SDK (agentops-sdk)"]
         Queue[("Async Batch Queue")]
-        Agent -->|@observe_agent / start_run| SDK
+        Agent -->|"@observe_agent / start_run"| SDK
         SDK -->|Buffer Events| Queue
     end
 
