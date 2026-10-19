@@ -104,7 +104,7 @@ The project strictly follows a structured 10-phase engineering workflow defined 
 | **Phase 5** | Trace Details & Run History | `APPROVED` | Waterfall timeline engine, correlation links (172 tests total) |
 | **Phase 6** | Monitoring Dashboard | `APPROVED` | React 19 + TypeScript + Vite UI (20 frontend tests, 0 lint errors) |
 | **Phase 7** | MCP Server & Read-Only Monitoring Tools | `APPROVED` | [`docs/mcp-server.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/mcp-server.md) (7 read tools, FastMCP, 42 tests) |
-| **Phase 8** | **AI Diagnostic Assistant** | `READY_FOR_REVIEW` | **[`docs/diagnostic-assistant.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/diagnostic-assistant.md) (68 tests, Groq/OpenAI, 94% coverage)** |
+| **Phase 8** | AI Diagnostic Assistant | `APPROVED` | [`docs/diagnostic-assistant.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/diagnostic-assistant.md) (68 tests, Groq/OpenAI, 94% coverage) |
 | **Phase 9** | Security, Reliability & Performance Hardening | `NOT_STARTED` | Rate limiting, fuzz testing, chaos resilience |
 | **Phase 10**| Deployment, End-to-End Pilot & Release Readiness | `NOT_STARTED` | Production containers, CI/CD, documentation polish |
 

@@ -7,9 +7,9 @@
 | Field                         | Value                                                |
 | ----------------------------- | ---------------------------------------------------- |
 | **Current Phase**       | Phase 8 — AI Diagnostic Assistant |
-| **Phase Status**        | `READY_FOR_REVIEW`                                   |
-| **Last Approved Phase** | Phase 7                                              |
-| **Next Phase**          | Phase 9 — Security, Reliability, and Performance Hardening (not started; requires explicit approval of Phase 8) |
+| **Phase Status**        | `APPROVED`                                           |
+| **Last Approved Phase** | Phase 8                                              |
+| **Next Phase**          | Phase 9 — Security, Reliability, and Performance Hardening (not started; awaiting explicit instruction to begin) |
 
 ---
 
@@ -24,7 +24,7 @@
 | 5     | Trace Details and Run History                               | `APPROVED`         |
 | 6     | Monitoring Dashboard                                        | `APPROVED`         |
 | 7     | MCP Server and Read-Only Monitoring Tools                   | `APPROVED`         |
-| 8     | AI Diagnostic Assistant                                     | `READY_FOR_REVIEW` |
+| 8     | AI Diagnostic Assistant                                     | `APPROVED`         |
 | 9     | Security, Reliability, and Performance Hardening            | `NOT_STARTED`      |
 | 10    | Deployment, End-to-End Pilot, and Release Readiness         | `NOT_STARTED`      |
 

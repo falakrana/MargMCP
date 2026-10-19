@@ -4,9 +4,9 @@
 
 - **Project:** AgentOps MCP
 - **Current phase:** Phase 8 — AI Diagnostic Assistant
-- **Current status:** READY_FOR_REVIEW
-- **Last human-approved phase:** Phase 7
-- **Next permitted action:** Await human owner review and explicit approval of Phase 8 before beginning Phase 9.
+- **Current status:** APPROVED
+- **Last human-approved phase:** Phase 8
+- **Next permitted action:** Phase 8 approved by owner on 2026-10-19. Await explicit owner instruction to begin Phase 9.
 - **Source of detailed requirements:** `implementation.md` plus approved PRD/SRS and architecture decisions.
 
 ## Phase checklist
@@ -22,7 +22,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 | 5     | Trace Details and Run History                               | APPROVED         | Approved by owner                                                          |
 | 6     | Monitoring Dashboard                                        | APPROVED         | Approved by owner (2026-10-19, see Phase 7 session entry)                  |
 | 7     | MCP Server and Read-Only Monitoring Tools                   | APPROVED         | Approved by owner (2026-10-19)                                             |
-| 8     | AI Diagnostic Assistant                                     | READY_FOR_REVIEW | Started on owner instruction "Start Phase 8" (2026-10-19); awaiting review |
+| 8     | AI Diagnostic Assistant                                     | APPROVED         | Approved by owner (2026-10-19)                                             |
 | 9     | Security, Reliability, and Performance Hardening            | NOT_STARTED      | Requires explicit approval of Phase 8                                      |
 | 10    | Deployment, End-to-End Pilot, and Release Readiness         | NOT_STARTED      | Requires explicit approval of Phase 9                                      |
 
@@ -535,9 +535,9 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
   - Phase 7 tests updated minimally because the MCP tool set legitimately grew by two read-only tools.
 - **Blockers/known limitations:** no rate limiting/cost budgets on diagnose endpoints (Phase 9); no live-provider verification; Docker CLI absent on host (inherited); pre-existing failing infra test above; metrics/trace evidence is from the run store, not Prometheus/Tempo; correctness of a model's *hypotheses* cannot be guaranteed — only that they are labelled and cite real evidence.
 - **Human verification steps:** Execute the checklist in `docs/diagnostic-assistant.md` (requires configuring a real provider key locally).
-- **Status at end:** `READY_FOR_REVIEW`
-- **Human approval:** None yet for Phase 8.
-- **Next permitted action:** Await human owner review and explicit approval of Phase 8 before beginning Phase 9.
+- **Status at end:** `APPROVED`
+- **Human approval:** Explicitly approved by owner on 2026-10-19 ("Ohk, I have reviewed it, now update the documents.").
+- **Next permitted action:** Await explicit owner instruction to begin Phase 9: Security, Reliability, and Performance Hardening.
 
 ## Append-only session entry template
 
