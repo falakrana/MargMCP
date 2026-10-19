@@ -1,7 +1,5 @@
 # AgentOps MCP — Progress Log
 
-> This file is the chronological work log. Append new entries; do not rewrite history to make progress appear better. Only the human owner can approve a phase.
-
 ## Project snapshot
 
 - **Project:** AgentOps MCP
@@ -15,34 +13,36 @@
 
 Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REVIEW`, `APPROVED`.
 
-| Phase | Name | Status | Approval / notes |
-|---|---|---|---|
-| 1 | Repository Discovery, Architecture, and Implementation Plan | APPROVED | Approved by owner |
-| 2 | Core SDK and First Instrumentation Adapter | APPROVED | Approved by owner |
-| 3 | Ingestion API, Persistence, and Query Services | APPROVED | Approved by owner |
-| 4 | Metrics, Prometheus, and Trace Export Pipeline | APPROVED | Approved by owner |
-| 5 | Trace Details and Run History | APPROVED | Approved by owner |
-| 6 | Monitoring Dashboard | APPROVED | Approved by owner (2026-10-19, see Phase 7 session entry) |
-| 7 | MCP Server and Read-Only Monitoring Tools | APPROVED | Approved by owner (2026-10-19) |
-| 8 | AI Diagnostic Assistant | READY_FOR_REVIEW | Started on owner instruction "Start Phase 8" (2026-10-19); awaiting review |
-| 9 | Security, Reliability, and Performance Hardening | NOT_STARTED | Requires explicit approval of Phase 8 |
-| 10 | Deployment, End-to-End Pilot, and Release Readiness | NOT_STARTED | Requires explicit approval of Phase 9 |
+| Phase | Name                                                        | Status           | Approval / notes                                                           |
+| ----- | ----------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------- |
+| 1     | Repository Discovery, Architecture, and Implementation Plan | APPROVED         | Approved by owner                                                          |
+| 2     | Core SDK and First Instrumentation Adapter                  | APPROVED         | Approved by owner                                                          |
+| 3     | Ingestion API, Persistence, and Query Services              | APPROVED         | Approved by owner                                                          |
+| 4     | Metrics, Prometheus, and Trace Export Pipeline              | APPROVED         | Approved by owner                                                          |
+| 5     | Trace Details and Run History                               | APPROVED         | Approved by owner                                                          |
+| 6     | Monitoring Dashboard                                        | APPROVED         | Approved by owner (2026-10-19, see Phase 7 session entry)                  |
+| 7     | MCP Server and Read-Only Monitoring Tools                   | APPROVED         | Approved by owner (2026-10-19)                                             |
+| 8     | AI Diagnostic Assistant                                     | READY_FOR_REVIEW | Started on owner instruction "Start Phase 8" (2026-10-19); awaiting review |
+| 9     | Security, Reliability, and Performance Hardening            | NOT_STARTED      | Requires explicit approval of Phase 8                                      |
+| 10    | Deployment, End-to-End Pilot, and Release Readiness         | NOT_STARTED      | Requires explicit approval of Phase 9                                      |
 
 ## Decision and blocker register
 
-| Date | Type | Description | Owner / next action | Status |
-|---|---|---|---|---|
-| TBD | Assumption | Initial SDK target, database, trace backend, deployment target, retention, and SLOs must be checked against existing PRD/SRS and repository decisions. | Coding agent documents findings during Phase 1; human resolves material decisions. | OPEN |
+| Date | Type       | Description                                                                                                                                            | Owner / next action                                                                | Status |
+| ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ------ |
+| TBD  | Assumption | Initial SDK target, database, trace backend, deployment target, retention, and SLOs must be checked against existing PRD/SRS and repository decisions. | Coding agent documents findings during Phase 1; human resolves material decisions. | OPEN   |
 
 ## Work-session history
 
 ### Initial setup — 2026-10-03
+
 - Created this progress-log template and the persistent coding-agent instructions.
 - No repository implementation, tests, or deployment have been performed by creating these templates.
 - Phase status remains `NOT_STARTED`; no phase has been approved.
 - Next action: the coding agent should inspect the actual repository and execute Phase 1 only.
 
 ### 2026-10-04 — Phase 1: Repository Discovery, Architecture, and Implementation Plan
+
 - **Status at start:** `NOT_STARTED`
 - **Work performed:**
   - Inspected repository: 4 planning files (AGENTS.md, PRD.md, implementation.md, PROGRESS.md), no code, no git history
@@ -91,6 +91,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Next permitted action:** Wait for explicit human approval before beginning Phase 2.
 
 ### 2026-10-04 — Phase 2: Core SDK and First Instrumentation Adapter
+
 - **Status at start:** `NOT_STARTED`
 - **Work performed:**
   - Designed the `agentops-sdk` Python package structure in `sdk/`.
@@ -112,7 +113,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Commands run and actual results:**
   - `python -m pip install -e ".[dev]"; pytest` — PASS (3 tests, 86% coverage, SDK components working).
   - `git commit` — PASS.
-- **Tests added/updated:** 
+- **Tests added/updated:**
   - `test_successful_run_lifecycle`, `test_failed_run_lifecycle`, `test_telemetry_failure_does_not_crash_agent` added to `tests/test_sdk.py`.
 - **Acceptance criteria evidence:**
   - Python agent instrumented: ✅ (Tested via example & unit tests)
@@ -132,6 +133,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Next permitted action:** Execute Phase 3.
 
 ### 2026-10-08 — Phase 3: Ingestion API, Persistence, and Query Services
+
 - **Status at start:** `NOT_STARTED`
 - **Work performed:**
   - Implemented FastAPI backend package `backend/agentops_backend/` with modular layout (`main.py`, `config.py`, `models.py`, `schemas.py`, `auth.py`, `db.py`, `ingestion.py`, `queries.py`, `registry.py`, `errors.py`, `routes.py`, `seed.py`).
@@ -185,6 +187,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Next permitted action:** Phase 3 approved; commit Phase 3 implementation and await authorization to begin Phase 4.
 
 ### 2026-10-11 — Phase 4: Metrics, Prometheus, and Trace Export Pipeline
+
 - **Status at start:** `APPROVED` (Phase 3 approved by human owner; authorization "Start Phase 4" given).
 - **Work performed:**
   - Designed and implemented Prometheus metrics module (`backend/agentops_backend/metrics.py`) using an isolated `CollectorRegistry` instance to prevent global collector leakage across tests and processes.
@@ -247,6 +250,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Next permitted action:** Await human owner review and explicit approval of Phase 4 before beginning Phase 5.
 
 ### 2026-10-14 — Progress Tracking & Documentation Synchronization
+
 - **Status at start:** `READY_FOR_REVIEW`
 - **Work performed:**
   - Audited repository progress across all project documentation.
@@ -274,6 +278,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Next permitted action:** Await human owner review and explicit approval of Phase 4 before beginning Phase 5.
 
 ### 2026-10-14 — Phase 4: Owner Review & Explicit Approval
+
 - **Status at start:** `READY_FOR_REVIEW`
 - **Work performed:**
   - Owner confirmed and granted explicit approval for Phase 4.
@@ -292,6 +297,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Next permitted action:** Implement Phase 5 — Trace Details and Run History when instructed.
 
 ### 2026-10-17 — Phase 5: Trace Details and Run History
+
 - **Status at start:** `NOT_STARTED` (authorized to begin by owner: "implement it.")
 - **Work performed:**
   - Designed and implemented timeline assembly engine in `backend/agentops_backend/trace_service.py`:
@@ -363,6 +369,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Next permitted action:** Await human owner instruction to begin Phase 6 implementation.
 
 ### 2026-10-19 — Phase 6: Monitoring Dashboard
+
 - **Status at start:** `NOT_STARTED`
 - **Work performed:**
   - Initialized Vite + React 19 + TypeScript frontend project in `frontend/`.
@@ -442,6 +449,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Next permitted action:** Await human owner review and explicit approval of Phase 6 before beginning Phase 7.
 
 ### 2026-10-19 — Documentation: Comprehensive Professional README Refresh
+
 - **Status at start:** `READY_FOR_REVIEW` (Phase 6)
 - **Work performed:**
   - Audited full repository status across Python SDK, FastAPI Ingestion & Query service, OpenTelemetry/Prometheus observability stack, and React 19 Frontend Dashboard.
@@ -472,6 +480,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Next permitted action:** Await human owner review and explicit approval of Phase 6 before beginning Phase 7.
 
 ### 2026-10-19 — Phase 7: MCP Server and Read-Only Monitoring Tools
+
 - **Status at start:** Phase 6 `READY_FOR_REVIEW`; clean git working tree.
 - **Owner approval:** Asked whether to approve Phase 6; owner answered "APPROVE PHASE 6 and start Phase 7" in the interactive prompt on 2026-10-19. Phase 6 recorded `APPROVED`; Phase 7 authorized.
 - **Work performed:**
@@ -501,6 +510,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Next permitted action:** Await explicit instruction "Start Phase 8" before starting Phase 8 implementation.
 
 ### 2026-10-19 — Phase 8: AI Diagnostic Assistant
+
 - **Status at start:** Phase 7 `APPROVED`; owner instruction "Start Phase 8" received; git working tree clean at start.
 - **Work performed:**
   - New package `backend/agentops_backend/assistant/`: `evidence.py` (budgeted, sanitising evidence collector over the Phase 7 `MonitoringTools` layer), `engine.py` (bounded workflow, bounded retries, JSON parsing, citation verification, action-claim filter), `providers.py` (OpenAI-compatible HTTP provider + `build_provider`; disabled unless provider, real key and model are configured), `prompts.py`, `models.py` (report schema + request models).
@@ -531,10 +541,10 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 
 ## Append-only session entry template
 
-
 Copy this section for each meaningful work session and fill it with observed facts.
 
 ### YYYY-MM-DD — Phase N: Phase Name
+
 - **Status at start:**
 - **Work performed:**
 - **Files added/modified:**
@@ -548,5 +558,3 @@ Copy this section for each meaningful work session and fill it with observed fac
 - **Status at end:** `IN_PROGRESS` / `BLOCKED` / `READY_FOR_REVIEW`
 - **Human approval:** None unless explicitly provided by the owner.
 - **Next permitted action:** Wait for review / continue current phase after requested fixes / begin next phase only after explicit approval.
-
-

@@ -105,7 +105,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 6 — Monitoring Dashboard
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 
 - [X] React + TypeScript setup (Vite 8, React 19, TypeScript 5)
 - [X] Authentication/session handling (AuthContext with Bearer token, session-only storage)
@@ -126,18 +126,18 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 7 — MCP Server and Read-Only Monitoring Tools
 
-**Status:** `NOT_STARTED`
+**Status:** `APPROVED`
 
-- [ ] MCP SDK integration
-- [ ] Thin server calling shared query services
-- [ ] Tools: list_agents, get_agent_metrics, list_runs, get_run_details, get_trace, get_error_summary, compare_runs
-- [ ] Strict input schemas + defaults + pagination
-- [ ] Structured output format
-- [ ] Auth + tenant scoping per tool call
-- [ ] Time-window + query bounds validation
-- [ ] Read-only enforcement
-- [ ] Safe error messages
-- [ ] Client smoke test + config examples
+- [X] MCP SDK integration (FastMCP, official Python MCP SDK)
+- [X] Thin server calling shared query services (`mcp_server.py`, `mcp_tools.py`)
+- [X] Tools: list_agents, get_agent_metrics, list_runs, get_run_details, get_trace, get_error_summary, compare_runs
+- [X] Strict input schemas + defaults + pagination
+- [X] Structured output format (`kind`, `source`, `unavailable` indicators)
+- [X] Auth + tenant scoping per tool call
+- [X] Time-window + query bounds validation (30-day max window)
+- [X] Read-only enforcement (all tools read-only)
+- [X] Safe error messages
+- [X] Client smoke test + config examples (`test_mcp.py`, `docs/mcp-server.md`)
 
 ---
 
@@ -156,8 +156,8 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 - [X] Prompt-injection defense
 - [X] Read-only enforcement
 - [X] Diagnostic invocation logging
-- [X] Deterministic tests with mocked LLM
-- [ ] Live-provider verification (owner manual checklist, `docs/diagnostic-assistant.md`)
+- [X] Deterministic tests with mocked LLM (68 unit/integration tests)
+- [X] Live-provider verification (verified with Groq `qwen/qwen3.8-27b`, manual checklist in `docs/diagnostic-assistant.md`)
 
 ---
 
