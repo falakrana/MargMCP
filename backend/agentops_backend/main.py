@@ -14,6 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from agentops_backend import __version__
+from agentops_backend.assistant import build_provider
 from agentops_backend.config import Settings, get_settings
 from agentops_backend.db import make_engine, make_session_factory
 from agentops_backend.errors import ApiError
@@ -74,6 +75,8 @@ def create_app(settings: Optional[Settings] = None, span_exporter=None) -> FastA
     app.state.engine = engine
     app.state.session_factory = make_session_factory(engine)
     app.state.observability = observability
+    # None when the diagnostic assistant is not configured (endpoints return 503).
+    app.state.diagnostic_provider = build_provider(settings)
 
     @app.middleware("http")
     async def _ingestion_metrics(request: Request, call_next):

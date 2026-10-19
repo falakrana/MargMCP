@@ -32,8 +32,10 @@ from mcp.server.fastmcp.exceptions import ToolError as McpToolError
 from mcp.types import ToolAnnotations
 from sqlalchemy.orm import Session
 
+from agentops_backend.assistant import DiagnosticEngine, build_provider
 from agentops_backend.config import Settings, get_settings
 from agentops_backend.db import make_engine, make_session_factory
+from agentops_backend.errors import ApiError
 from agentops_backend.mcp_tools import DEFAULT_SPANS, MonitoringTools, ToolError
 
 logger = logging.getLogger("agentops_backend.mcp")
@@ -48,8 +50,14 @@ TOOL_NAMES = (
     "compare_runs",
 )
 
+# Phase 8: read-only AI diagnostics (calls an external LLM when configured).
+DIAGNOSTIC_TOOL_NAMES = ("diagnose_run", "diagnose_agent")
+
 _READ_ONLY = ToolAnnotations(
     readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False
+)
+_DIAGNOSTIC = ToolAnnotations(
+    readOnlyHint=True, destructiveHint=False, idempotentHint=False, openWorldHint=True
 )
 
 
@@ -175,6 +183,43 @@ def build_server(
         """Summary: side-by-side comparison of two runs in the same project with
         deltas (b minus a) for duration, LLM calls, tool calls and tokens."""
         return call(tools.compare_runs, token_for(ctx), run_id_a, run_id_b, project_id)
+
+    diagnostics = DiagnosticEngine(settings, session_factory, build_provider(settings))
+
+    def diagnose(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> dict[str, Any]:
+        try:
+            return fn(*args, **kwargs).model_dump(mode="json")
+        except ApiError as exc:
+            raise McpToolError(f"{exc.code}: {exc.message}") from None
+
+    @mcp.tool(annotations=_DIAGNOSTIC)
+    def diagnose_run(
+        ctx: Context, run_id: str, project_id: Optional[str] = None,
+        question: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """AI-assisted, read-only diagnosis of one run. Retrieves evidence through the
+        other tools' data layer and returns findings (facts), likely explanations
+        (hypotheses with confidence), cited evidence, unknowns and next checks. Every
+        statement cites a retrieved run/span/metric. Needs the assistant configured."""
+        return diagnose(
+            diagnostics.diagnose_run, token_for(ctx), run_id,
+            project_id=project_id, question=question,
+        )
+
+    @mcp.tool(annotations=_DIAGNOSTIC)
+    def diagnose_agent(
+        ctx: Context, agent_id: str, project_id: Optional[str] = None,
+        started_after: Optional[str] = None, started_before: Optional[str] = None,
+        question: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """AI-assisted, read-only diagnosis of an agent's recent failures and latency
+        (default window last 24 hours, max 30 days). Same report format and
+        evidence guarantees as diagnose_run."""
+        return diagnose(
+            diagnostics.diagnose_agent, token_for(ctx), agent_id,
+            project_id=project_id, started_after=started_after,
+            started_before=started_before, question=question,
+        )
 
     return mcp
 

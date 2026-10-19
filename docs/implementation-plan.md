@@ -143,20 +143,21 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 8 — AI Diagnostic Assistant
 
-**Status:** `NOT_STARTED`
+**Status:** `READY_FOR_REVIEW`
 
-- [ ] Role definition, tool permissions, context limits, response format
-- [ ] MCP tool integration for evidence retrieval
-- [ ] Bounded investigation workflow
-- [ ] Evidence references for all claims
-- [ ] Observation vs. hypothesis distinction
-- [ ] Missing evidence reporting
-- [ ] Provider/model config via env vars
-- [ ] Timeouts + bounded tool calls + token limits
-- [ ] Prompt-injection defense
-- [ ] Read-only enforcement
-- [ ] Diagnostic invocation logging
-- [ ] Deterministic tests with mocked LLM
+- [X] Role definition, tool permissions, context limits, response format
+- [X] MCP tool integration for evidence retrieval (shared authorised tool layer)
+- [X] Bounded investigation workflow
+- [X] Evidence references for all claims
+- [X] Observation vs. hypothesis distinction
+- [X] Missing evidence reporting
+- [X] Provider/model config via env vars
+- [X] Timeouts + bounded tool calls + token limits
+- [X] Prompt-injection defense
+- [X] Read-only enforcement
+- [X] Diagnostic invocation logging
+- [X] Deterministic tests with mocked LLM
+- [ ] Live-provider verification (owner manual checklist, `docs/diagnostic-assistant.md`)
 
 ---
 

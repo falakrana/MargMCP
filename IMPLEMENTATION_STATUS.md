@@ -6,10 +6,10 @@
 
 | Field                         | Value                                                |
 | ----------------------------- | ---------------------------------------------------- |
-| **Current Phase**       | Phase 7 — MCP Server and Read-Only Monitoring Tools |
-| **Phase Status**        | `APPROVED`                                           |
+| **Current Phase**       | Phase 8 — AI Diagnostic Assistant |
+| **Phase Status**        | `READY_FOR_REVIEW`                                   |
 | **Last Approved Phase** | Phase 7                                              |
-| **Next Phase**          | Phase 8 — AI Diagnostic Assistant (awaiting start instruction) |
+| **Next Phase**          | Phase 9 — Security, Reliability, and Performance Hardening (not started; requires explicit approval of Phase 8) |
 
 ---
 
@@ -24,7 +24,7 @@
 | 5     | Trace Details and Run History                               | `APPROVED`         |
 | 6     | Monitoring Dashboard                                        | `APPROVED`         |
 | 7     | MCP Server and Read-Only Monitoring Tools                   | `APPROVED`         |
-| 8     | AI Diagnostic Assistant                                     | `NOT_STARTED`      |
+| 8     | AI Diagnostic Assistant                                     | `READY_FOR_REVIEW` |
 | 9     | Security, Reliability, and Performance Hardening            | `NOT_STARTED`      |
 | 10    | Deployment, End-to-End Pilot, and Release Readiness         | `NOT_STARTED`      |
 
@@ -215,6 +215,71 @@ backend/agentops_backend/config.py
 backend/agentops_backend/queries.py
 backend/pyproject.toml
 .env.example
+PROGRESS.md
+IMPLEMENTATION_STATUS.md
+```
+
+---
+
+## Phase 8 — Completed Tasks
+
+- [X] Assistant package `backend/agentops_backend/assistant/` (`evidence`, `engine`, `providers`, `prompts`, `models`)
+- [X] Role, tool permissions, context limits and response format defined (system prompt + `DiagnosticReport` schema: scope, findings, likely_explanations, evidence, unknown, next_checks)
+- [X] Evidence retrieved only through the authorised read-only Phase 7 tool layer (7 read tools); deterministic, budgeted workflow: scope → metrics/recent runs → anomalous/failed runs → traces → baseline comparison → single LLM call
+- [X] Citation verification: unresolvable refs removed, uncited statements dropped; `evidence[]` built from retrieved records, never model text
+- [X] Facts (`findings`) vs hypotheses (`likely_explanations` with confidence + uncertainty); gaps reported in `unknown`
+- [X] Provider config via `DIAGNOSTIC_*` env (disabled by default); OpenAI-compatible provider (Groq/OpenAI presets, custom base URL)
+- [X] Bounds: tool-call budget, context chars, spans, max tokens, timeout, bounded retries (429/504/502 mapped to safe errors)
+- [X] Prompt-injection defence: escaped/delimited data block, untrusted-data system prompt, suspicious-content counter
+- [X] Read-only enforcement: no write/exec code (static test), no DB change, remediation claims stripped
+- [X] Safe invocation logging (scope kind, outcome, counts, duration only)
+- [X] REST `POST /v1/projects/{id}/diagnose/{run|agent}` and MCP tools `diagnose_run` / `diagnose_agent`
+- [X] 68 deterministic tests with scripted LLM + mocked HTTP; docs `docs/diagnostic-assistant.md`
+
+## Phase 8 — Acceptance Criteria
+
+| Criterion                                              | Status  | Evidence                                                                    |
+| ------------------------------------------------------ | ------- | --------------------------------------------------------------------------- |
+| Answers using real retrieved telemetry                 | ✅ PASS (scripted LLM; live model NOT RUN) | `TestKnownFailures`, `TestCitations`             |
+| Separates evidence from hypotheses, exposes uncertainty | ✅ PASS | `TestKnownFailures::test_observations_and_hypotheses_are_separate_fields`, `TestMissingEvidence` |
+| Does not invent run IDs, metrics, costs, root causes   | ✅ PASS | `TestCitations`, `TestMissingEvidence::test_conflicting_model_output_*`     |
+| Respects tenant access and privacy/redaction settings  | ✅ PASS | `TestTenancy`, `TestInjectionAndPrivacy`                                    |
+| Cannot mutate monitored systems                        | ✅ PASS | `TestReadOnly`                                                              |
+
+## Phase 8 — Known Issues & Notes
+
+- Pre-existing, unrelated: `backend/tests/test_infra_config.py::test_compose_defines_observability_services` still FAILS (compose `postgres` service commented out in owner commit `2d7e924`). Not modified.
+- Last full run: `pytest backend/tests --cov=agentops_backend` → 282 passed, 1 failed (above), coverage 94%. Linting/type checks NOT RUN (none configured).
+- No live LLM provider call was made; real-model quality is unverified until the owner runs the manual checklist with a real key.
+- Only OpenAI-compatible providers are implemented; with hosted providers, redacted telemetry summaries leave the infrastructure.
+- No rate limiting / cost budget on diagnose endpoints (Phase 9). No dashboard UI for diagnostics (not requested).
+- Evidence comes from the run store (not live Prometheus/Tempo). Baseline = lower-quartile-duration success (documented heuristic).
+- Phase 7 `test_mcp.py` assertions were updated for the two new tools.
+
+## Files Added in Phase 8
+
+```
+backend/agentops_backend/assistant/__init__.py
+backend/agentops_backend/assistant/engine.py
+backend/agentops_backend/assistant/evidence.py
+backend/agentops_backend/assistant/models.py
+backend/agentops_backend/assistant/prompts.py
+backend/agentops_backend/assistant/providers.py
+backend/tests/test_assistant.py
+docs/diagnostic-assistant.md
+```
+
+## Files Modified in Phase 8
+
+```
+backend/agentops_backend/config.py
+backend/agentops_backend/main.py
+backend/agentops_backend/mcp_server.py
+backend/agentops_backend/routes.py
+backend/pyproject.toml
+backend/tests/test_mcp.py
+.env.example
+docs/implementation-plan.md
 PROGRESS.md
 IMPLEMENTATION_STATUS.md
 ```

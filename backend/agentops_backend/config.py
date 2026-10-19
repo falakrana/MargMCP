@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import Optional
 from urllib.parse import quote_plus
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from pathlib import Path
@@ -83,6 +83,52 @@ class Settings(BaseSettings):
     mcp_max_window_days: int = Field(default=30, ge=1)
     # Maximum rows returned by any list-style tool call.
     mcp_max_results: int = Field(default=50, ge=1, le=100)
+
+    # ---- Phase 8: AI diagnostic assistant ----
+    # Env names intentionally keep the ``DIAGNOSTIC_*`` form used in .env.example
+    # (an explicit alias bypasses the AGENTOPS_ prefix). The assistant is
+    # disabled unless a provider *and* a real API key are configured.
+    diagnostic_llm_provider: str = Field(
+        default="none", validation_alias=AliasChoices("diagnostic_llm_provider")
+    )  # none | groq | openai | openai_compatible
+    diagnostic_llm_model: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("diagnostic_llm_model")
+    )
+    diagnostic_llm_api_key: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("diagnostic_llm_api_key")
+    )
+    # Required for ``openai_compatible``; optional override otherwise.
+    diagnostic_llm_base_url: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("diagnostic_llm_base_url")
+    )
+    diagnostic_llm_max_tokens: int = Field(
+        default=1500, ge=128, le=8000, validation_alias=AliasChoices("diagnostic_llm_max_tokens")
+    )
+    # Retries on rate-limit / transient provider errors (bounded).
+    diagnostic_llm_max_retries: int = Field(
+        default=1, ge=0, le=3, validation_alias=AliasChoices("diagnostic_llm_max_retries")
+    )
+    # Upper bound on evidence-retrieval tool calls per investigation.
+    diagnostic_max_tool_calls: int = Field(
+        default=15, ge=1, le=50, validation_alias=AliasChoices("diagnostic_max_tool_calls")
+    )
+    # Per-request LLM timeout (seconds).
+    diagnostic_timeout_seconds: int = Field(
+        default=120, ge=1, le=600, validation_alias=AliasChoices("diagnostic_timeout_seconds")
+    )
+    # Max characters of evidence JSON sent to the model (context bound).
+    diagnostic_max_context_chars: int = Field(
+        default=24_000, ge=2_000, le=200_000,
+        validation_alias=AliasChoices("diagnostic_max_context_chars"),
+    )
+    # Max spans of any single trace included as evidence.
+    diagnostic_max_spans: int = Field(
+        default=60, ge=5, le=200, validation_alias=AliasChoices("diagnostic_max_spans")
+    )
+    # How far back to look for a healthy baseline run.
+    diagnostic_baseline_days: int = Field(
+        default=7, ge=1, le=30, validation_alias=AliasChoices("diagnostic_baseline_days")
+    )
 
     postgres_host: str = Field(default="localhost", validation_alias="POSTGRES_HOST")
     postgres_port: int = Field(default=5432, validation_alias="POSTGRES_PORT")
