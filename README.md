@@ -12,7 +12,7 @@
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/frontend/vite.config.ts)
 [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-Tracing-F5A800?logo=opentelemetry)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/backend/agentops_backend/tracing.py)
 [![Prometheus](https://img.shields.io/badge/Prometheus-Metrics-E6522C?logo=prometheus)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/backend/agentops_backend/metrics.py)
-[![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/README.md)
+[![License](https://img.shields.io/badge/License-BSL%201.1%20%7C%20Apache--2.0-blue.svg)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/LICENSE)
 
 </div>
 
@@ -452,4 +452,9 @@ npm run build
 
 ## License
 
-This project is licensed under the Apache License 2.0. See [`LICENSE`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/LICENSE) for details.
+AgentOpsMCP uses a dual-licensing model designed to protect the platform while giving developers complete freedom to instrument their agents:
+
+- **SDK ([`agentops-sdk`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/sdk))**: Licensed under the permissive **[Apache License 2.0](file:///c:/Users/Falak/Desktop/AgentOpsMCP/sdk/LICENSE)**. Developers can freely integrate, embed, and redistribute the telemetry SDK inside any proprietary or open-source agent application with zero restrictions.
+- **Backend, Frontend Dashboard & MCP Server**: Licensed under the **[Business Source License 1.1 (BSL 1.1)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/LICENSE)**. It is free for local development, testing, and internal production use within your own organization. You may not offer AgentOpsMCP as a managed or hosted cloud service to third parties. On January 1, 2030, this code automatically converts to the Apache License 2.0.
+
+See [`LICENSE`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/LICENSE) for complete legal terms.
