@@ -143,7 +143,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 8 — AI Diagnostic Assistant
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 
 - [X] Role definition, tool permissions, context limits, response format
 - [X] MCP tool integration for evidence retrieval (shared authorised tool layer)
