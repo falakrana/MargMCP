@@ -8,7 +8,10 @@ from urllib.parse import quote_plus
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from pathlib import Path
+
 DEFAULT_SECRET_KEY = "change-me-to-a-random-string"
+_ROOT_ENV = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
@@ -19,7 +22,9 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_prefix="AGENTOPS_", env_file=".env", extra="ignore"
+        env_prefix="AGENTOPS_",
+        env_file=(str(_ROOT_ENV), ".env"),
+        extra="ignore",
     )
 
     env: str = "development"
