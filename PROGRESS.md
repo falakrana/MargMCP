@@ -5,10 +5,10 @@
 ## Project snapshot
 
 - **Project:** AgentOps MCP
-- **Current phase:** Phase 6 — Monitoring Dashboard
+- **Current phase:** Phase 8 — AI Diagnostic Assistant
 - **Current status:** READY_FOR_REVIEW
-- **Last human-approved phase:** Phase 5
-- **Next permitted action:** Await human owner review and explicit approval of Phase 6 before beginning Phase 7.
+- **Last human-approved phase:** Phase 7
+- **Next permitted action:** Await human owner review and explicit approval of Phase 8 before beginning Phase 9.
 - **Source of detailed requirements:** `implementation.md` plus approved PRD/SRS and architecture decisions.
 
 ## Phase checklist
@@ -22,9 +22,9 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 | 3 | Ingestion API, Persistence, and Query Services | APPROVED | Approved by owner |
 | 4 | Metrics, Prometheus, and Trace Export Pipeline | APPROVED | Approved by owner |
 | 5 | Trace Details and Run History | APPROVED | Approved by owner |
-| 6 | Monitoring Dashboard | READY_FOR_REVIEW | Complete and ready for review |
-| 7 | MCP Server and Read-Only Monitoring Tools | NOT_STARTED | Requires explicit approval of Phase 6 |
-| 8 | AI Diagnostic Assistant | NOT_STARTED | Requires explicit approval of Phase 7 |
+| 6 | Monitoring Dashboard | APPROVED | Approved by owner (2026-10-19, see Phase 7 session entry) |
+| 7 | MCP Server and Read-Only Monitoring Tools | APPROVED | Approved by owner (2026-10-19) |
+| 8 | AI Diagnostic Assistant | READY_FOR_REVIEW | Started on owner instruction "Start Phase 8" (2026-10-19); awaiting review |
 | 9 | Security, Reliability, and Performance Hardening | NOT_STARTED | Requires explicit approval of Phase 8 |
 | 10 | Deployment, End-to-End Pilot, and Release Readiness | NOT_STARTED | Requires explicit approval of Phase 9 |
 
@@ -499,6 +499,35 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Status at end:** `APPROVED`
 - **Human approval:** Explicitly approved by owner on 2026-10-19 ("I have done my testing, approve phase 7. Just update the documentations. Once I say 'Start Phase 8', then start.").
 - **Next permitted action:** Await explicit instruction "Start Phase 8" before starting Phase 8 implementation.
+
+### 2026-10-19 — Phase 8: AI Diagnostic Assistant
+- **Status at start:** Phase 7 `APPROVED`; owner instruction "Start Phase 8" received; git working tree clean at start.
+- **Work performed:**
+  - New package `backend/agentops_backend/assistant/`: `evidence.py` (budgeted, sanitising evidence collector over the Phase 7 `MonitoringTools` layer), `engine.py` (bounded workflow, bounded retries, JSON parsing, citation verification, action-claim filter), `providers.py` (OpenAI-compatible HTTP provider + `build_provider`; disabled unless provider, real key and model are configured), `prompts.py`, `models.py` (report schema + request models).
+  - REST: `POST /v1/projects/{project_id}/diagnose/run` and `/diagnose/agent` (read scope, project-scoped) in `routes.py`; provider wired in `main.py` (`app.state.diagnostic_provider`).
+  - MCP: `diagnose_run` / `diagnose_agent` tools (read-only, openWorld) in `mcp_server.py`.
+  - Config: `DIAGNOSTIC_*` settings (reusing the names already in `.env.example`) in `config.py`; `httpx` promoted to a runtime dependency (`httpx>=0.26,<1.0`).
+  - Docs: `docs/diagnostic-assistant.md`; `.env.example` placeholders.
+- **Files added:** `backend/agentops_backend/assistant/{__init__,engine,evidence,models,prompts,providers}.py`, `backend/tests/test_assistant.py`, `docs/diagnostic-assistant.md`.
+- **Files modified:** `backend/agentops_backend/{config,main,routes,mcp_server}.py`, `backend/pyproject.toml`, `backend/tests/test_mcp.py` (tool-set assertions now include the two diagnose tools), `.env.example`, `docs/implementation-plan.md`, `PROGRESS.md`, `IMPLEMENTATION_STATUS.md`.
+- **Commands run and actual results:**
+  - `pytest backend/tests/test_assistant.py` (first run) — FAIL: baseline selection used the latest success (itself slow); changed to a lower-quartile-duration baseline. Later FAIL (test bug only): spy test counted the `session_factory` attribute; fixed the test filter.
+  - `pytest backend/tests --cov=agentops_backend` — 282 passed, 1 failed; total coverage 94% (assistant: engine 93%, evidence 91%, providers/models/prompts 100%). The single failure is the pre-existing `test_infra_config.py::test_compose_defines_observability_services` (compose `postgres` service commented out in owner commit `2d7e924`); unrelated and untouched.
+  - Linting/type checking: NOT RUN — no linter/type-checker is configured in the repository.
+  - Live LLM provider call: NOT RUN — no real provider key/model was used; all model behaviour in tests is scripted; HTTP provider covered with `httpx.MockTransport`.
+- **Tests added/updated:** `backend/tests/test_assistant.py` (68 tests): known slow tool/LLM/failed-run evaluation cases, no-evidence (LLM skipped), incomplete/conflicting telemetry, citation verification, read-only/no-remediation, prompt injection in run text/span names/question, privacy (payloads/keys/metadata), bounds (tool budget, context, tokens, timeout, retries, 429/504/502), tenancy/auth, REST end-to-end and errors, provider HTTP behaviour, config rules, MCP tools.
+- **Acceptance criteria evidence:** see `IMPLEMENTATION_STATUS.md` Phase 8 table.
+- **Decisions/assumptions:**
+  - Evidence retrieval is deterministic code (not LLM-driven tool selection) so the "bounded investigation workflow" and tool-call budget are enforceable; the model gets exactly one call.
+  - Provider `none` by default; only OpenAI-compatible providers implemented (Groq/OpenAI presets; any base URL). Chosen because the owner's `.env.example` already named Groq. No `mock` provider is exposed in production config — scripted providers live only in tests.
+  - Baseline = lower-quartile-duration successful run in the prior 7 days (heuristic, documented).
+  - Dashboard UI for diagnostics was not built (owner did not request it; the question was left unanswered).
+  - Phase 7 tests updated minimally because the MCP tool set legitimately grew by two read-only tools.
+- **Blockers/known limitations:** no rate limiting/cost budgets on diagnose endpoints (Phase 9); no live-provider verification; Docker CLI absent on host (inherited); pre-existing failing infra test above; metrics/trace evidence is from the run store, not Prometheus/Tempo; correctness of a model's *hypotheses* cannot be guaranteed — only that they are labelled and cite real evidence.
+- **Human verification steps:** Execute the checklist in `docs/diagnostic-assistant.md` (requires configuring a real provider key locally).
+- **Status at end:** `READY_FOR_REVIEW`
+- **Human approval:** None yet for Phase 8.
+- **Next permitted action:** Await human owner review and explicit approval of Phase 8 before beginning Phase 9.
 
 ## Append-only session entry template
 

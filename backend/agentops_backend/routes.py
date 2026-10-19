@@ -14,6 +14,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from agentops_backend import ingestion, queries, registry, trace_service
+from agentops_backend.assistant import DiagnosticEngine, DiagnosticReport
+from agentops_backend.assistant.models import DiagnoseAgentRequest, DiagnoseRunRequest
 from agentops_backend.auth import (
     Principal,
     _bearer_token,
@@ -336,6 +338,62 @@ def get_run_by_trace_id(
     return RedirectResponse(
         url=f"/v1/projects/{project_id}/runs/{run.run_id}/timeline",
         status_code=307,
+    )
+
+
+# ---- Phase 8: AI diagnostic assistant -------------------------------------- #
+def _engine(request: Request) -> DiagnosticEngine:
+    st = request.app.state
+    return DiagnosticEngine(
+        st.settings, st.session_factory, getattr(st, "diagnostic_provider", None)
+    )
+
+
+def _iso_or_none(dt: Optional[datetime]) -> Optional[str]:
+    dt = _utc(dt)
+    return dt.isoformat() if dt is not None else None
+
+
+@query_router.post(
+    "/{project_id}/diagnose/run",
+    response_model=DiagnosticReport,
+    summary="Diagnose a run (Phase 8)",
+    description=(
+        "Read-only, evidence-grounded investigation of one run. Evidence is retrieved "
+        "through the same authorised read-only tool layer as the MCP server; every "
+        "statement in the report cites retrieved records."
+    ),
+)
+def diagnose_run(
+    project_id: str,
+    body: DiagnoseRunRequest,
+    request: Request,
+    principal: Principal = Depends(require_scope("read")),
+) -> DiagnosticReport:
+    _scoped(principal, project_id)
+    return _engine(request).diagnose_run(
+        _bearer_token(request), body.run_id, project_id=project_id, question=body.question
+    )
+
+
+@query_router.post(
+    "/{project_id}/diagnose/agent",
+    response_model=DiagnosticReport,
+    summary="Diagnose an agent over a time window (Phase 8)",
+    description="Read-only investigation of an agent's recent failures/latency (default window 24h, max 30d).",
+)
+def diagnose_agent(
+    project_id: str,
+    body: DiagnoseAgentRequest,
+    request: Request,
+    principal: Principal = Depends(require_scope("read")),
+) -> DiagnosticReport:
+    _scoped(principal, project_id)
+    after, before = _range(body.started_after, body.started_before)
+    return _engine(request).diagnose_agent(
+        _bearer_token(request), body.agent_id, project_id=project_id,
+        started_after=_iso_or_none(after), started_before=_iso_or_none(before),
+        question=body.question,
     )
 
 

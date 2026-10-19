@@ -11,7 +11,7 @@ from datetime import timedelta
 import pytest
 from sqlalchemy.exc import OperationalError
 
-from agentops_backend.mcp_server import TOOL_NAMES, build_server
+from agentops_backend.mcp_server import DIAGNOSTIC_TOOL_NAMES, TOOL_NAMES, build_server
 from agentops_backend.mcp_tools import MonitoringTools, ToolError
 
 from .conftest import SECRET, Tenant, full_run, make_event, now
@@ -316,7 +316,7 @@ class TestReadOnlySurface:
         st = client.app.state
         server = build_server(st.settings, st.session_factory)
         listed = asyncio.run(server.list_tools())
-        assert {t.name for t in listed} == set(TOOL_NAMES)
+        assert {t.name for t in listed} == set(TOOL_NAMES) | set(DIAGNOSTIC_TOOL_NAMES)
         for t in listed:
             assert t.annotations is not None
             assert t.annotations.readOnlyHint is True
@@ -378,7 +378,7 @@ class TestMcpProtocolSmoke:
         names, agents, runs, trace, bad, denied = asyncio.run(
             asyncio.wait_for(scenario(), timeout=60)
         )
-        assert names == set(TOOL_NAMES)
+        assert names == set(TOOL_NAMES) | set(DIAGNOSTIC_TOOL_NAMES)
         assert agents.isError is False
         assert {a["agent_id"] for a in agents.structuredContent["items"]} == {"agent-1", "agent-2"}
         assert [r["run_id"] for r in runs.structuredContent["items"]] == ["run-bad"]
