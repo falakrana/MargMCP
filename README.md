@@ -102,9 +102,9 @@ The project strictly follows a structured 10-phase engineering workflow defined 
 | **Phase 3** | Ingestion API, Persistence & Query Services | `APPROVED` | `backend/agentops_backend/` (89 tests, HMAC auth, migrations) |
 | **Phase 4** | Metrics, Prometheus & Trace Export Pipeline | `APPROVED` | OpenTelemetry OTLP export, Prometheus `/metrics` (134 tests) |
 | **Phase 5** | Trace Details & Run History | `APPROVED` | Waterfall timeline engine, correlation links (172 tests total) |
-| **Phase 6** | **Monitoring Dashboard** | `READY_FOR_REVIEW` | **React 19 + TypeScript + Vite UI (20 frontend tests, 0 lint errors)** |
-| **Phase 7** | MCP Server & Read-Only Monitoring Tools | `NOT_STARTED` | Tool schemas defined in PRD §6; begins upon Phase 6 approval |
-| **Phase 8** | AI Diagnostic Assistant | `NOT_STARTED` | Evidence-based diagnostic loop; begins upon Phase 7 approval |
+| **Phase 6** | Monitoring Dashboard | `APPROVED` | React 19 + TypeScript + Vite UI (20 frontend tests, 0 lint errors) |
+| **Phase 7** | MCP Server & Read-Only Monitoring Tools | `APPROVED` | [`docs/mcp-server.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/mcp-server.md) (7 read tools, FastMCP, 42 tests) |
+| **Phase 8** | **AI Diagnostic Assistant** | `READY_FOR_REVIEW` | **[`docs/diagnostic-assistant.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/diagnostic-assistant.md) (68 tests, Groq/OpenAI, 94% coverage)** |
 | **Phase 9** | Security, Reliability & Performance Hardening | `NOT_STARTED` | Rate limiting, fuzz testing, chaos resilience |
 | **Phase 10**| Deployment, End-to-End Pilot & Release Readiness | `NOT_STARTED` | Production containers, CI/CD, documentation polish |
 
@@ -145,6 +145,16 @@ The project strictly follows a structured 10-phase engineering workflow defined 
 - **Error-preserving sampling**: Error runs are always exported (100%), while healthy runs follow a configurable sampling ratio (`AGENTOPS_TRACE_SAMPLE_RATIO`).
 - **Prometheus metrics**: Exposes bounded, privacy-screened operational metrics (`agentops_runs_total`, `agentops_run_duration_seconds`, `agentops_llm_calls_total`, etc.) via authenticated `GET /metrics`.
 - **Pre-configured Grafana dashboards**: Ready-to-use Grafana dashboard provisioning for run rates, error ratios, latency percentiles (p50/p95), and token consumption.
+
+### 5. Read-Only MCP Server (`backend/agentops_backend/mcp_server.py`)
+- **FastMCP standard integration**: Exposes 7 read-only monitoring tools (`list_agents`, `get_agent_metrics`, `list_runs`, `get_run_details`, `get_trace`, `get_error_summary`, `compare_runs`) over `stdio` and `streamable-http`.
+- **Strict tenant enforcement & bound guards**: Every tool call validates API key permissions, caps query windows (max 30 days), and sanitizes output payloads.
+
+### 6. AI Diagnostic Assistant (`backend/agentops_backend/assistant/`)
+- **Evidence-grounded root-cause diagnosis**: Investigates agent failures and latency anomalies using real telemetry retrieved through the authorized MCP tool layer.
+- **Strict anti-hallucination & citation verification**: Every finding and hypothesis must cite real run/span IDs. Fabricated references and ungrounded statements are automatically dropped.
+- **Prompt-injection defense**: Telemetry fields (prompts, tool outputs, exception strings) are sanitized, XML-delimited, and treated strictly as untrusted data.
+- **Read-only guarantee**: The assistant possesses zero mutation capabilities; claims of executing fixes or remediations are automatically stripped.
 
 ---
 
@@ -347,10 +357,18 @@ AgentOpsMCP/
 │   │   ├── tracing.py              # OpenTelemetry span materialization
 │   │   ├── auth.py                 # HMAC-SHA256 API key verification
 │   │   ├── models.py               # SQLAlchemy relational schemas
+│   │   ├── assistant/              # Phase 8: AI Diagnostic Assistant (engine, evidence, providers)
+│   │   ├── mcp_server.py           # Phase 7: FastMCP stdio/HTTP server adapter
+│   │   ├── mcp_tools.py            # Phase 7: Authorised read-only monitoring tools
+│   │   ├── trace_service.py        # Run timeline & synthetic span assembly
+│   │   ├── metrics.py              # Prometheus metrics with cardinality bounding
+│   │   ├── tracing.py              # OpenTelemetry span materialization
+│   │   ├── auth.py                 # HMAC-SHA256 API key verification
+│   │   ├── models.py               # SQLAlchemy relational schemas
 │   │   ├── schemas.py              # Pydantic contract schemas
 │   │   └── seed.py                 # Synthetic dataset generator
 │   ├── migrations/                 # Alembic migration scripts
-│   └── tests/                      # 172 unit, integration & contract tests
+│   └── tests/                      # 282 unit, integration, MCP & diagnostic tests (94% coverage)
 ├── frontend/                       # React 19 + TypeScript Monitoring Dashboard
 │   ├── src/
 │   │   ├── App.tsx                 # Route declarations & main application shell
@@ -379,6 +397,8 @@ AgentOpsMCP/
 └── docs/                           # Architecture, API & Engineering Specifications
     ├── architecture.md             # System boundaries, data flow & security model
     ├── telemetry-schema.md         # Canonical Telemetry Schema v1.0
+    ├── mcp-server.md               # Phase 7 MCP server and read-only monitoring tools
+    ├── diagnostic-assistant.md     # Phase 8 AI Diagnostic Assistant architecture and tests
     ├── dashboard.md                # Phase 6 Frontend Dashboard documentation
     ├── trace-and-history.md        # Span assembly, correlation links & retention
     ├── sdk-integration-guide.md    # Developer integration patterns (Decorator/Context)
@@ -399,7 +419,7 @@ AgentOps enforces strict automated testing at every phase. Mocks are never repre
 ```powershell
 .\.venv\Scripts\pytest backend/tests -v
 ```
-- **Coverage**: 172 tests covering authentication, idempotent ingestion, time-window boundaries, error-preserving trace sampling, span assembly, and cross-tenant isolation (95% code coverage).
+- **Coverage**: 282 tests covering authentication, idempotent ingestion, time-window boundaries, error-preserving trace sampling, span assembly, cross-tenant isolation, MCP protocol client sessions, and AI diagnostic assistant verification (94% code coverage).
 
 ### Running Frontend Tests (Vitest)
 ```bash
@@ -434,9 +454,11 @@ npm run build
 ## Documentation Index
 
 - **System Architecture**: [`docs/architecture.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/architecture.md)
+- **AI Diagnostic Assistant**: [`docs/diagnostic-assistant.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/diagnostic-assistant.md)
+- **MCP Server & Read-Only Tools**: [`docs/mcp-server.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/mcp-server.md)
+- **Monitoring Dashboard Guide**: [`docs/dashboard.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/dashboard.md)
 - **Telemetry Schema Specification**: [`docs/telemetry-schema.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/telemetry-schema.md)
 - **SDK Developer Integration Guide**: [`docs/sdk-integration-guide.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/sdk-integration-guide.md)
-- **Monitoring Dashboard Guide**: [`docs/dashboard.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/dashboard.md)
 - **Trace Details & Run History**: [`docs/trace-and-history.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/trace-and-history.md)
 - **Observability & Metrics Reference**: [`docs/observability.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/observability.md)
 - **REST API Reference**: [`docs/api.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/api.md)
