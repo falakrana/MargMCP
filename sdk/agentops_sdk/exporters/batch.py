@@ -16,16 +16,25 @@ class AsyncBatchProcessor:
         self.exporter = exporter
         self.config = config
         self.queue = queue.Queue(maxsize=config.max_queue_size)
+        self._dropped_events_count = 0
+        self._count_lock = threading.Lock()
         
         self._stop_event = threading.Event()
         self._thread = threading.Thread(target=self._worker, daemon=True)
         self._thread.start()
         
+    @property
+    def dropped_events_count(self) -> int:
+        with self._count_lock:
+            return self._dropped_events_count
+
     def add_event(self, event: TelemetryEvent):
         """Add an event to the queue safely (non-blocking)."""
         try:
             self.queue.put_nowait(event)
         except queue.Full:
+            with self._count_lock:
+                self._dropped_events_count += 1
             logger.debug("AgentOps telemetry queue full, dropping event.")
             
     def _worker(self):

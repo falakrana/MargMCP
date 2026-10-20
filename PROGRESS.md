@@ -3,10 +3,10 @@
 ## Project snapshot
 
 - **Project:** AgentOps MCP
-- **Current phase:** Phase 8 — AI Diagnostic Assistant
-- **Current status:** APPROVED
+- **Current phase:** Phase 9 — Security, Reliability, and Performance Hardening
+- **Current status:** READY_FOR_REVIEW
 - **Last human-approved phase:** Phase 8
-- **Next permitted action:** Phase 8 approved by owner on 2026-10-19. Await explicit owner instruction to begin Phase 9.
+- **Next permitted action:** Phase 9 implementation complete and verified. Await explicit owner review and approval before starting Phase 10.
 - **Source of detailed requirements:** `implementation.md` plus approved PRD/SRS and architecture decisions.
 
 ## Phase checklist
@@ -23,7 +23,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 | 6     | Monitoring Dashboard                                        | APPROVED         | Approved by owner (2026-10-19, see Phase 7 session entry)                  |
 | 7     | MCP Server and Read-Only Monitoring Tools                   | APPROVED         | Approved by owner (2026-10-19)                                             |
 | 8     | AI Diagnostic Assistant                                     | APPROVED         | Approved by owner (2026-10-19)                                             |
-| 9     | Security, Reliability, and Performance Hardening            | NOT_STARTED      | Requires explicit approval of Phase 8                                      |
+| 9     | Security, Reliability, and Performance Hardening            | READY_FOR_REVIEW | Complete (301 backend + 9 SDK tests passing; docs written; awaiting owner approval) |
 | 10    | Deployment, End-to-End Pilot, and Release Readiness         | NOT_STARTED      | Requires explicit approval of Phase 9                                      |
 
 ## Decision and blocker register
@@ -538,6 +538,72 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Status at end:** `APPROVED`
 - **Human approval:** Explicitly approved by owner on 2026-10-19 ("Ohk, I have reviewed it, now update the documents.").
 - **Next permitted action:** Await explicit owner instruction to begin Phase 9: Security, Reliability, and Performance Hardening.
+
+### 2026-10-20 — Phase 9: Security, Reliability, and Performance Hardening
+
+- **Status at start:** Phase 8 `APPROVED`; owner instruction "Implement it" received; git working tree clean at start.
+- **Work performed:**
+  - **Secret Redaction & Scrubbing:** Implemented `backend/agentops_backend/redact.py` (`scrub_text`, `scrub_obj`) supporting recursive scrubbing of JWTs, Bearer tokens, DB connection URLs (`postgresql://user:pass@host`), `aop_`, `sk-`, and `gsk-` keys. Wired into `ingestion.py` attributes, metadata, and error summaries.
+  - **Structured Logging:** Implemented `backend/agentops_backend/logging_config.py` with `JsonFormatter` guaranteeing all logs are formatted as JSON with automatic secret scrubbing and request ID correlation (`X-Request-ID`).
+  - **Security Middlewares & Defenses:** Implemented `backend/agentops_backend/security.py`:
+    - `RateLimiter`: In-memory fixed-window rate limiter per project and client IP (default 600 RPM, burst 100), tracking rejected requests in Prometheus counter `agentops_rate_limited_total`.
+    - `BodyLimitMiddleware`: Streaming-aware middleware immediately rejecting any payload exceeding `max_payload_bytes` with HTTP 413.
+    - Security headers: Injected `X-Request-ID`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, `Content-Security-Policy: default-src 'none'`, and `X-Frame-Options: DENY`.
+    - Production runtime protections: Disabled `/docs` and `/redoc` unless `AGENTOPS_ENABLE_DOCS=true`; enforced `MIN_TOKEN_LENGTH = 24` and distinct production tokens.
+  - **Authentication Hardening:** Replaced string comparison with constant-time byte comparison `safe_equals` (immune to surrogate/Unicode exceptions). Added API key lifecycle routes (`GET /v1/projects/{id}/api-keys`, `POST .../rotate`, `POST .../revoke`).
+  - **Query & Resource Boundaries:** Added `max_page_offset = 10000` cap on pagination and `rest_max_window_days = 90` cap on historical time-range queries.
+  - **Database Connection Pooling & Timeouts:** Configured SQLAlchemy pool options (`db_pool_size=10`, `max_overflow=20`, `pool_timeout=30`, `pool_recycle=1800`, `connect_timeout=10`) and statement execution timeout (`db_statement_timeout_ms=15000`).
+  - **Prometheus Metric Cardinality:** Implemented `SeriesCap` wrapper limiting unique label combinations to 1,000 per family and grouping excess series into `"other"`.
+  - **Data Retention & Telemetry Purging:** Implemented `agentops_backend/retention.py` service and CLI with mandatory dry-run default, project-scoped hard deletes (`DELETE /v1/projects/{id}/telemetry` and `POST /v1/retention/purge`), cascading run and event removal, and documented independent Tempo OTLP trace lifecycle.
+  - **SDK Resilience Hardening:**
+    - `HttpExporter`: Exponential backoff with randomized jitter (`max_retries = 3`, `retry_backoff_seconds = 0.5`), immediate fail-fast on 4xx client errors (`400, 401, 403, 404, 413, 422`), compliance with `Retry-After` headers on 429, and absolute exception swallowing so agent execution never crashes.
+    - `AsyncBatchProcessor`: Safe drops on queue overflow (`max_queue_size = 1000`) tracked via `dropped_events_count`.
+    - `redaction.py`: Unconditional credential scrubbing even when `capture_payloads=True`.
+  - **Documentation Created:**
+    - `docs/threat-model.md`: Detailed STRIDE threat model across SDK, Ingestion API, DB, Prometheus, Tempo, MCP server, and Diagnostic Assistant.
+    - `docs/security-and-performance-findings.md`: Findings report with severities, test evidence, SLO targets, and residual risk register.
+    - Updated `.env.example` with Phase 9 parameters.
+- **Files added:**
+  - `backend/agentops_backend/redact.py`
+  - `backend/agentops_backend/logging_config.py`
+  - `backend/agentops_backend/security.py`
+  - `backend/agentops_backend/retention.py`
+  - `backend/tests/test_security_phase9.py`
+  - `backend/tests/test_performance_cardinality.py`
+  - `sdk/tests/test_sdk_resilience.py`
+  - `docs/threat-model.md`
+  - `docs/security-and-performance-findings.md`
+- **Files modified:**
+  - `backend/agentops_backend/{auth,config,db,ingestion,main,mcp_server,metrics,observability,registry,routes,schemas}.py`
+  - `backend/tests/{conftest,test_infra_config,test_metrics}.py`
+  - `sdk/agentops_sdk/{client,config,redaction}.py`
+  - `sdk/agentops_sdk/exporters/{batch,http}.py`
+  - `.env.example`, `docs/implementation-plan.md`, `PROGRESS.md`, `IMPLEMENTATION_STATUS.md`
+- **Commands run and actual results:**
+  - `pytest backend/tests` — PASS (301 passed in 43.70s, 0 failures).
+  - `pytest sdk/tests` — PASS (9 passed in 3.05s, 85% coverage, 0 failures).
+  - `npm run build` (in frontend/) — PASS (TypeScript + Vite built cleanly in 11.83s, 0 errors).
+  - `git diff --stat` — PASS (clean modifications).
+- **Tests added/updated:**
+  - `backend/tests/test_security_phase9.py` (13 tests): token timing resistance, surrogate character handling, key rotation, key revocation, 413 body size limits, secret scrubbing in JSON logs, database URL scrubbing, rate limiting, and retention purge.
+  - `backend/tests/test_performance_cardinality.py` (5 tests): Prometheus `SeriesCap` cardinality bound (1000 limit), deep pagination offset rejection, excessive query time window rejection, database statement timeout configuration, and synthetic workload batch ingestion latency.
+  - `sdk/tests/test_sdk_resilience.py` (6 tests): transient 503 retry and recovery, non-retryable 403 fail-fast, 429 `Retry-After` compliance, connection error suppression, queue overflow buffer drop safety, and unconditional credential redaction.
+- **Acceptance criteria evidence:**
+  - No known critical/high-severity issues unresolved: ✅ (All identified issues SEC-01 through SEC-08 remediated)
+  - Cross-tenant access tests pass: ✅ (Tenancy bounds enforced and tested)
+  - Sensitive-data controls work by default: ✅ (Scrubbing on by default, payload capture off by default)
+  - Telemetry outages do not break monitored operations: ✅ (Tested in `test_telemetry_failure_does_not_crash_agent` and `test_http_exporter_connection_error_is_swallowed`)
+  - Performance results include workload size, environment, measurements, limitations: ✅ (Documented in findings report)
+  - Retention and deletion behavior documented and tested: ✅ (`docs/threat-model.md`, `test_security_phase9.py`)
+- **Decisions/assumptions:**
+  - In-process rate limiting with LRU eviction used for single-instance MVP; documented for Redis upgrade upon horizontal clustering.
+  - Bounded exponential backoff with full jitter in SDK capped at 3 retries.
+  - Tempo retention managed externally by OTLP backend; AgentOps coordinates via `AGENTOPS_TRACE_RETENTION_DAYS`.
+- **Blockers/known limitations:** Docker CLI absent on host environment (inherited); live deployment and container verification scheduled for Phase 10.
+- **Human verification steps:** Execute the Phase 9 manual verification checklist.
+- **Status at end:** `READY_FOR_REVIEW`
+- **Human approval:** None — awaiting review.
+- **Next permitted action:** Await explicit owner approval of Phase 9 before proceeding to Phase 10.
 
 ## Append-only session entry template
 

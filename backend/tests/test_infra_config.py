@@ -28,7 +28,8 @@ def compose():
 
 
 def test_compose_defines_observability_services(compose):
-    assert {"postgres", "backend", "prometheus", "tempo", "grafana"} <= set(compose["services"])
+    # Core backend + observability stack. Local postgres is optional (commented out when using cloud/Neon Postgres).
+    assert {"backend", "prometheus", "tempo", "grafana"} <= set(compose["services"])
 
 
 def test_compose_images_are_pinned(compose):

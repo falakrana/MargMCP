@@ -31,8 +31,9 @@ from sqlalchemy.orm import Session
 from agentops_backend.config import Settings
 from agentops_backend.errors import ApiError
 from agentops_backend.models import Agent, Event, Run, utcnow
-from agentops_backend.schemas import IngestBatch, IngestEvent, IngestResult, RejectedEvent
 from agentops_backend.observability import EventObservation, Observability
+from agentops_backend.redact import scrub_obj, scrub_text
+from agentops_backend.schemas import IngestBatch, IngestEvent, IngestResult, RejectedEvent
 
 logger = logging.getLogger(__name__)
 
@@ -118,15 +119,15 @@ def sanitize_data(data: dict[str, Any], settings: Settings) -> dict[str, Any]:
         ):
             raise EventRejected("invalid_span_id", f"{key} must be 16 lowercase hex characters.")
     if "metadata" in clean:
-        _scalar_map("metadata", clean["metadata"], MAX_METADATA_KEYS)
+        clean["metadata"] = scrub_obj(_scalar_map("metadata", clean["metadata"], MAX_METADATA_KEYS))
     if "attributes" in clean:
-        _scalar_map("attributes", clean["attributes"], MAX_ATTRIBUTE_KEYS)
+        clean["attributes"] = scrub_obj(_scalar_map("attributes", clean["attributes"], MAX_ATTRIBUTE_KEYS))
     for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
         _token(clean, key)
     if "error_type" in clean:
-        clean["error_type"] = str(clean["error_type"])[:128]
+        clean["error_type"] = scrub_text(str(clean["error_type"])[:128])
     if "error_summary" in clean:
-        clean["error_summary"] = str(clean["error_summary"])[:1024]
+        clean["error_summary"] = scrub_text(str(clean["error_summary"])[:1024])
     for key in ("sdk_version",):
         if key in clean:
             clean[key] = str(clean[key])[:32]

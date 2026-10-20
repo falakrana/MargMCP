@@ -81,7 +81,9 @@ def build_server(
 ) -> FastMCP:
     settings = settings or get_settings()
     if session_factory is None:
-        session_factory = make_session_factory(make_engine(settings.resolved_database_url()))
+        session_factory = make_session_factory(
+            make_engine(settings.resolved_database_url(), settings)
+        )
     tools = MonitoringTools(settings, session_factory)
     mcp = FastMCP(
         "agentops",

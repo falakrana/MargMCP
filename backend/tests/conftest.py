@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from agentops_backend.config import Settings
 from agentops_backend.main import create_app
 
-ADMIN = "test-admin-token"
+ADMIN = "test-admin-token-0123456789abcdef"
 SECRET = "unit-test-secret-key-0123456789abcdef"
 
 

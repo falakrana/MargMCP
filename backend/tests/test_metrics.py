@@ -17,7 +17,7 @@ METRICS_TOKEN = "metrics-secret-token-for-tests"
 
 ALLOWED_LABELS = {
     "agent_id", "environment", "status", "provider", "model", "tool_name",
-    "token_type", "endpoint", "outcome", "code", "version",
+    "token_type", "endpoint", "outcome", "code", "version", "scope",
 }
 FORBIDDEN_LABELS = {
     "run_id", "event_id", "trace_id", "span_id", "user_id", "project_id",
