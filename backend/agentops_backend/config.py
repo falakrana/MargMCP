@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
 DEFAULT_SECRET_KEY = "change-me-to-a-random-string"
+MIN_TOKEN_LENGTH = 24
 _ROOT_ENV = Path(__file__).resolve().parents[2] / ".env"
 
 
@@ -130,6 +131,46 @@ class Settings(BaseSettings):
         default=7, ge=1, le=30, validation_alias=AliasChoices("diagnostic_baseline_days")
     )
 
+    # ---- Phase 9: security, reliability, performance ----
+    # In-process fixed-window rate limits (per minute). Counters live in this
+    # process only; with N workers the effective limit is N x the configured
+    # value (see docs/security-hardening.md).
+    rate_limit_enabled: bool = True
+    # All non-health/non-metrics requests per client IP (coarse flood guard).
+    rate_limit_ip_per_minute: int = Field(default=1200, ge=1)
+    # 401/403 responses per client IP before further requests get 429
+    # (credential-guessing throttle).
+    rate_limit_auth_failures_per_minute: int = Field(default=20, ge=1)
+    # Authenticated requests per project, per scope.
+    rate_limit_ingest_per_minute: int = Field(default=600, ge=1)
+    rate_limit_read_per_minute: int = Field(default=600, ge=1)
+    # Diagnostic assistant calls are LLM-backed (cost + latency): keep tight.
+    rate_limit_diagnose_per_minute: int = Field(default=10, ge=1)
+    # Upper bound on tracked (bucket, key) pairs so the limiter cannot grow
+    # without bound under a many-source flood.
+    rate_limit_max_tracked_keys: int = Field(default=10_000, ge=100)
+    # Use the right-most X-Forwarded-For entry as the client IP. Enable ONLY
+    # behind exactly one trusted reverse proxy that overwrites the header.
+    trust_proxy_headers: bool = False
+
+    # "auto" = text in development, JSON elsewhere.
+    log_format: str = "auto"  # auto | text | json
+    # Interactive API docs (/docs, /redoc, /openapi.json). Default: dev only.
+    enable_docs: Optional[bool] = None
+
+    # Query bounds for the REST API.
+    rest_max_window_days: int = Field(default=366, ge=1)
+    max_page_offset: int = Field(default=50_000, ge=100)
+
+    # Database pool/timeouts (non-SQLite). Statement timeout is opt-in because
+    # some poolers reject session-level settings.
+    db_pool_size: int = Field(default=5, ge=1, le=100)
+    db_max_overflow: int = Field(default=10, ge=0, le=100)
+    db_pool_timeout_seconds: int = Field(default=10, ge=1)
+    db_pool_recycle_seconds: int = Field(default=1800, ge=30)
+    db_connect_timeout_seconds: int = Field(default=5, ge=1)
+    db_statement_timeout_ms: Optional[int] = Field(default=None, ge=100)
+
     postgres_host: str = Field(default="localhost", validation_alias="POSTGRES_HOST")
     postgres_port: int = Field(default=5432, validation_alias="POSTGRES_PORT")
     postgres_db: str = Field(default="agentops", validation_alias="POSTGRES_DB")
@@ -146,14 +187,28 @@ class Settings(BaseSettings):
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
+    def docs_enabled(self) -> bool:
+        return self.enable_docs if self.enable_docs is not None else self.env == "development"
+
     def validate_for_runtime(self) -> None:
-        """Refuse to start outside development with an insecure secret."""
-        if self.env != "development" and (
-            self.secret_key == DEFAULT_SECRET_KEY or len(self.secret_key) < 32
-        ):
+        """Refuse to start outside development with insecure credentials."""
+        if self.env == "development":
+            return
+        if self.secret_key == DEFAULT_SECRET_KEY or len(self.secret_key) < 32:
             raise RuntimeError(
                 "AGENTOPS_SECRET_KEY must be set to a random value of at least "
                 "32 characters when AGENTOPS_ENV is not 'development'."
+            )
+        for name, token in (("ADMIN_TOKEN", self.admin_token), ("METRICS_TOKEN", self.metrics_token)):
+            if token is not None and len(token) < MIN_TOKEN_LENGTH:
+                raise RuntimeError(
+                    f"AGENTOPS_{name} must be at least {MIN_TOKEN_LENGTH} characters "
+                    "when AGENTOPS_ENV is not 'development'."
+                )
+        if self.admin_token and self.admin_token in (self.metrics_token, self.secret_key):
+            raise RuntimeError(
+                "AGENTOPS_ADMIN_TOKEN must differ from AGENTOPS_METRICS_TOKEN and "
+                "AGENTOPS_SECRET_KEY (a leaked scrape token must not grant admin access)."
             )
 
 

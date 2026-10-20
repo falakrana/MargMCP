@@ -112,6 +112,52 @@ class ApiKeyCreated(BaseModel):
     api_key: str = Field(description="Shown exactly once; store it securely.")
 
 
+class ApiKeyOut(BaseModel):
+    """API-key metadata. The key itself (and its hash) is never returned."""
+
+    id: int
+    project_id: str
+    name: str
+    key_prefix: str
+    scopes: list[str]
+    created_at: datetime
+    revoked_at: Optional[datetime] = None
+    active: bool
+
+
+class ApiKeyRotate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    # True (default): the old key stops working immediately. False: both keys
+    # are valid until the operator revokes the old one (zero-downtime rollout).
+    revoke_old: bool = True
+
+
+class ApiKeyRotated(BaseModel):
+    new_key: ApiKeyCreated
+    old_key: ApiKeyOut
+
+
+class RetentionPurgeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    # Default: the configured AGENTOPS_RUN_RETENTION_DAYS.
+    older_than_days: Optional[int] = Field(default=None, ge=1, le=3650)
+    project_id: Optional[str] = Field(default=None, pattern=SAFE_ID_PATTERN)
+    # Destructive deletion must be requested explicitly.
+    dry_run: bool = True
+    max_batches: int = Field(default=100, ge=1, le=1000)
+
+
+class PurgeResultOut(BaseModel):
+    dry_run: bool
+    cutoff: Optional[datetime]
+    project_id: Optional[str]
+    runs: int = Field(description="Runs matched (dry run) or deleted.")
+    events: int = Field(description="Events matched (dry run) or deleted.")
+    batches: int
+    complete: bool = Field(description="False if max_batches stopped the purge early; call again.")
+    trace_backend_note: str
+
+
 # --------------------------------------------------------------------------- #
 # Query responses
 # --------------------------------------------------------------------------- #

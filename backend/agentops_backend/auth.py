@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from agentops_backend.errors import ApiError, forbidden, unauthorized
 from agentops_backend.models import ApiKey
+from agentops_backend.security import enforce_rate
 
 KEY_PREFIX_MARK = "aop_"
 VALID_SCOPES = {"ingest", "read"}
@@ -45,6 +46,15 @@ def generate_api_key() -> tuple[str, str]:
 
 def hash_key(key: str, secret_key: str) -> str:
     return hmac.new(secret_key.encode(), key.encode(), hashlib.sha256).hexdigest()
+
+
+def safe_equals(a: str, b: str) -> bool:
+    """Constant-time string comparison that is safe for any Unicode input.
+
+    ``hmac.compare_digest`` raises ``TypeError`` for non-ASCII ``str``; header
+    values are attacker controlled, so compare UTF-8 bytes instead.
+    """
+    return hmac.compare_digest(a.encode("utf-8", "surrogatepass"), b.encode("utf-8", "surrogatepass"))
 
 
 def _parse_prefix(key: str) -> Optional[str]:
@@ -111,6 +121,13 @@ def require_scope(scope: str) -> Callable[..., Principal]:
         principal = authenticate(request, session, token=token)
         if scope not in principal.scopes:
             raise forbidden("insufficient_scope", f"API key lacks the '{scope}' scope.")
+        settings = request.app.state.settings
+        limit = (
+            settings.rate_limit_ingest_per_minute
+            if scope == "ingest"
+            else settings.rate_limit_read_per_minute
+        )
+        enforce_rate(request, scope, principal.project_id, limit)
         return principal
 
     return dependency
@@ -130,5 +147,5 @@ def require_admin(
     if not configured:
         raise ApiError(503, "admin_disabled", "Admin API is not enabled on this server.")
     token = credentials.credentials if credentials is not None else _bearer_token(request)
-    if token is None or not hmac.compare_digest(token, configured):
+    if token is None or not safe_equals(token, configured):
         raise unauthorized("Missing or invalid admin credentials.")

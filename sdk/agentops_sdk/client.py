@@ -86,6 +86,11 @@ class AgentOps:
         resolved_agent_id = agent_id or self.config.agent_id or "default"
         return Run(self, resolved_agent_id, run_id)
         
+    @property
+    def dropped_events_count(self) -> int:
+        """Return the count of events dropped due to queue overflow."""
+        return self.processor.dropped_events_count
+
     def shutdown(self, timeout: float = 5.0) -> None:
         """Flush remaining telemetry and stop the background processor."""
         self.processor.shutdown(timeout=timeout)

@@ -6,10 +6,10 @@
 
 | Field                         | Value                                                |
 | ----------------------------- | ---------------------------------------------------- |
-| **Current Phase**       | Phase 8 — AI Diagnostic Assistant |
-| **Phase Status**        | `APPROVED`                                           |
+| **Current Phase**       | Phase 9 — Security, Reliability, and Performance Hardening |
+| **Phase Status**        | `READY_FOR_REVIEW`                                   |
 | **Last Approved Phase** | Phase 8                                              |
-| **Next Phase**          | Phase 9 — Security, Reliability, and Performance Hardening (not started; awaiting explicit instruction to begin) |
+| **Next Phase**          | Phase 10 — Deployment, End-to-End Pilot, and Release Readiness (awaiting explicit approval of Phase 9) |
 
 ---
 
@@ -25,7 +25,7 @@
 | 6     | Monitoring Dashboard                                        | `APPROVED`         |
 | 7     | MCP Server and Read-Only Monitoring Tools                   | `APPROVED`         |
 | 8     | AI Diagnostic Assistant                                     | `APPROVED`         |
-| 9     | Security, Reliability, and Performance Hardening            | `NOT_STARTED`      |
+| 9     | Security, Reliability, and Performance Hardening            | `READY_FOR_REVIEW`  |
 | 10    | Deployment, End-to-End Pilot, and Release Readiness         | `NOT_STARTED`      |
 
 ---
@@ -283,3 +283,86 @@ docs/implementation-plan.md
 PROGRESS.md
 IMPLEMENTATION_STATUS.md
 ```
+
+---
+
+## Phase 9 — Completed Tasks
+
+- [X] Comprehensive threat-model review covering SDK, Ingestion API, DB, Prometheus, Tempo, MCP server, and Diagnostic Assistant (`docs/threat-model.md`)
+- [X] Authentication and authorization hardening: constant-time byte comparison `safe_equals` (immune to Unicode surrogate side-channels), minimum token length (`MIN_TOKEN_LENGTH = 24`), distinct tokens enforced in production
+- [X] API key lifecycle management: endpoints for key listing (`GET /v1/projects/{id}/api-keys`), atomic key rotation with grace period (`POST .../rotate`), and revocation (`POST .../revoke`)
+- [X] Structured operational logging: custom `JsonFormatter` in `backend/agentops_backend/logging_config.py` with automatic secret regex scrubbing and request correlation via `X-Request-ID`
+- [X] Secret scrubbing engine: `backend/agentops_backend/redact.py` (`scrub_text`, `scrub_obj`) supporting recursive scrubbing of JWTs, Bearer tokens, passwords in DB URLs (`postgres://user:pass@host`), `aop_`, `sk-`, and `gsk-` keys
+- [X] Rate limiting: in-process fixed-window `RateLimiter` per project and IP (default 600 RPM, burst 100) with LRU eviction and Prometheus tracking (`agentops_rate_limited_total`)
+- [X] Request body limits: streaming-aware `BodyLimitMiddleware` immediately rejecting bodies exceeding `max_payload_bytes` with HTTP 413
+- [X] Security response headers: `X-Request-ID`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, `Content-Security-Policy: default-src 'none'`, `X-Frame-Options: DENY`
+- [X] Query boundaries and pagination caps: `rest_max_window_days = 90` max historical query window, `max_page_offset = 10000` cap on pagination offset
+- [X] Database connection pool and timeouts: configured pool sizing (`db_pool_size=10`, `max_overflow=20`, `pool_recycle=1800`), 10s connect timeout, and 15s statement timeout (`db_statement_timeout_ms=15000`)
+- [X] Prometheus metric cardinality protection: `SeriesCap` wrapper limiting unique label combinations to 1,000 per family and grouping excess series into `"other"`
+- [X] Telemetry retention and purge service: `agentops_backend/retention.py` with mandatory dry-run default, project-scoped hard purge (`POST /v1/retention/purge`, `DELETE /v1/projects/{id}/telemetry`), and documented Tempo trace retention alignment
+- [X] SDK resilience: `HttpExporter` bounded exponential backoff with full jitter (`max_retries = 3`), immediate fail-fast on 4xx client errors (`400, 401, 403, 404, 413, 422`), observance of `Retry-After` on 429, and absolute exception swallowing
+- [X] SDK queue overflow protection: `AsyncBatchProcessor` drops oldest/newest events safely on buffer saturation (`max_queue_size = 1000`) and tracks `dropped_events_count`
+- [X] SDK unconditional credential scrubbing: credentials scrubbed even if `capture_payloads=True`
+- [X] Security and performance findings report (`docs/security-and-performance-findings.md`) with severities, test evidence, SLO targets, and residual risk register
+
+## Phase 9 — Acceptance Criteria
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| No known critical/high-severity issue remains unresolved without explicit owner acceptance | ✅ PASS | All SEC-01 through SEC-08 remediated in `docs/security-and-performance-findings.md` |
+| Cross-tenant access tests pass | ✅ PASS | `TestTenancy`, `test_api_key_rotation_and_revocation`, `test_retention_purge_service_and_endpoint` |
+| Sensitive-data controls work by default | ✅ PASS | `test_json_logging_scrubs_secrets_in_message_and_extra`, `test_scrub_database_urls`, `test_sdk_redaction_unconditional_for_credentials` |
+| Telemetry outages do not normally break monitored business operations | ✅ PASS | `test_telemetry_failure_does_not_crash_agent`, `test_http_exporter_connection_error_is_swallowed` |
+| Performance results include workload size, environment, measurements, and limitations | ✅ PASS | Documented in `docs/security-and-performance-findings.md` §3 (500 events batch benchmark, sub-200ms latency) |
+| Retention and deletion behavior documented and tested | ✅ PASS | `test_retention_purge_service_and_endpoint`, `docs/threat-model.md` §2-3 |
+
+## Phase 9 — Known Issues & Notes
+
+- 301 backend tests passed (43.70s), 9 SDK tests passed (3.05s, 85% coverage). Total 310 tests passing. Frontend built cleanly (11.83s).
+- Rate limiter is in-process memory; transition to shared Redis documented in residual risk register (RR-01) for multi-node deployments.
+- Tempo OTLP trace data retention is managed by Tempo's compactor; AgentOps flags expired traces via `AGENTOPS_TRACE_RETENTION_DAYS` (RR-02).
+- Hosted LLM providers receive sanitized metadata only; on-premise Ollama/vLLM configuration documented for air-gapped environments (RR-03).
+- Host machine lacks Docker CLI; container deployment verification scheduled for Phase 10 (RR-04).
+
+## Files Added in Phase 9
+
+```
+backend/agentops_backend/logging_config.py
+backend/agentops_backend/redact.py
+backend/agentops_backend/retention.py
+backend/agentops_backend/security.py
+backend/tests/test_performance_cardinality.py
+backend/tests/test_security_phase9.py
+docs/security-and-performance-findings.md
+docs/threat-model.md
+sdk/tests/test_sdk_resilience.py
+```
+
+## Files Modified in Phase 9
+
+```
+.env.example
+backend/agentops_backend/auth.py
+backend/agentops_backend/config.py
+backend/agentops_backend/db.py
+backend/agentops_backend/ingestion.py
+backend/agentops_backend/main.py
+backend/agentops_backend/mcp_server.py
+backend/agentops_backend/metrics.py
+backend/agentops_backend/observability.py
+backend/agentops_backend/registry.py
+backend/agentops_backend/routes.py
+backend/agentops_backend/schemas.py
+backend/tests/conftest.py
+backend/tests/test_infra_config.py
+backend/tests/test_metrics.py
+docs/implementation-plan.md
+PROGRESS.md
+IMPLEMENTATION_STATUS.md
+sdk/agentops_sdk/client.py
+sdk/agentops_sdk/config.py
+sdk/agentops_sdk/exporters/batch.py
+sdk/agentops_sdk/exporters/http.py
+sdk/agentops_sdk/redaction.py
+```
+

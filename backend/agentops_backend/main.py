@@ -27,6 +27,8 @@ from agentops_backend.routes import (
     metrics_router,
     query_router,
 )
+from agentops_backend.logging_config import configure_logging
+from agentops_backend.security import BodyLimitMiddleware, install_http_protections
 
 logger = logging.getLogger("agentops_backend")
 
@@ -42,9 +44,15 @@ def _validation_details(errors: list[dict]) -> list[dict]:
 def create_app(settings: Optional[Settings] = None, span_exporter=None) -> FastAPI:
     settings = settings or get_settings()
     settings.validate_for_runtime()
-    logging.basicConfig(level=settings.log_level.upper())
+    configure_logging(settings)
+    if settings.trace_retention_days > settings.run_retention_days:
+        logger.warning(
+            "AGENTOPS_TRACE_RETENTION_DAYS (%d) exceeds AGENTOPS_RUN_RETENTION_DAYS (%d): "
+            "traces may outlive their run records.",
+            settings.trace_retention_days, settings.run_retention_days,
+        )
 
-    engine = make_engine(settings.resolved_database_url())
+    engine = make_engine(settings.resolved_database_url(), settings)
     observability = Observability(settings, span_exporter=span_exporter)
 
     @asynccontextmanager
@@ -55,11 +63,18 @@ def create_app(settings: Optional[Settings] = None, span_exporter=None) -> FastA
         observability.shutdown()
         engine.dispose()
 
+    docs = settings.docs_enabled()
     app = FastAPI(
         title="AgentOps MCP Ingestion & Query API",
         version=__version__,
         lifespan=lifespan,
+        docs_url="/docs" if docs else None,
+        redoc_url="/redoc" if docs else None,
+        openapi_url="/openapi.json" if docs else None,
     )
+    # Added first => innermost: oversized bodies are rejected as a normal 413
+    # response that still passes through the metrics/protection middleware.
+    app.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_payload_bytes)
     # CORS: allow the local dashboard dev server in development only.
     # In production, traffic is expected to go through a reverse proxy that
     # serves both the frontend and backend from the same origin.
@@ -77,6 +92,9 @@ def create_app(settings: Optional[Settings] = None, span_exporter=None) -> FastA
     app.state.observability = observability
     # None when the diagnostic assistant is not configured (endpoints return 503).
     app.state.diagnostic_provider = build_provider(settings)
+    # Registered before the ingestion-metrics middleware so that 429 responses
+    # are counted in agentops_ingestion_requests_total as well.
+    install_http_protections(app, settings)
 
     @app.middleware("http")
     async def _ingestion_metrics(request: Request, call_next):

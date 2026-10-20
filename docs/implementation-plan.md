@@ -163,22 +163,22 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 9 — Security, Reliability, and Performance Hardening
 
-**Status:** `NOT_STARTED`
+**Status:** `READY_FOR_REVIEW`
 
-- [ ] Threat model review
-- [ ] Auth/authz/isolation/key-rotation verification
-- [ ] Sensitive data leakage audit
-- [ ] Rate limits + request/query bounds
-- [ ] Failure mode testing (DNS, network, backend, DB down)
-- [ ] Retry policy review
-- [ ] Buffer/queue limit verification
-- [ ] Database index + query plan review
-- [ ] Synthetic load testing
-- [ ] Prometheus cardinality check
-- [ ] Retention/deletion workflow testing
-- [ ] Dependency + secret scanning
-- [ ] Operational health checks + structured logs
-- [ ] Security + performance findings report
+- [X] Threat model review (`docs/threat-model.md`)
+- [X] Auth/authz/isolation/key-rotation verification (safe_equals, key rotation/revocation endpoints)
+- [X] Sensitive data leakage audit (scrubbing, no credentials in logs/traces/metrics)
+- [X] Rate limits + request/query bounds (BodyLimitMiddleware 413, RateLimiter, max_page_offset, rest_max_window_days)
+- [X] Failure mode testing (DNS, network, backend, DB down - error swallowing in SDK)
+- [X] Retry policy review (bounded exponential backoff + jitter, Retry-After header)
+- [X] Buffer/queue limit verification (max_queue_size with dropped_events_count)
+- [X] Database index + query plan review (PostgreSQL pooling, statement timeouts)
+- [X] Synthetic load testing (500 events batch benchmark, sub-200ms latency)
+- [X] Prometheus cardinality check (SeriesCap 1000 limit per family)
+- [X] Retention/deletion workflow testing (retention purge service + project telemetry deletion)
+- [X] Dependency + secret scanning (audit checks, zero plain credentials)
+- [X] Operational health checks + structured logs (JsonFormatter with scrubbed secrets, live/ready checks)
+- [X] Security + performance findings report (`docs/security-and-performance-findings.md`)
 
 ---
 

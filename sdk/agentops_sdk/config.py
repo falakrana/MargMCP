@@ -16,6 +16,8 @@ class AgentOpsConfig(BaseModel):
     max_batch_size: int = Field(default=100)
     max_queue_size: int = Field(default=1000)
     timeout_seconds: float = Field(default=5.0)
+    max_retries: int = Field(default=2, ge=0, le=5)
+    retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
     
     # Privacy
     capture_payloads: bool = Field(default=False)

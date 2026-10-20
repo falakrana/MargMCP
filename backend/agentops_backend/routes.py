@@ -1,8 +1,8 @@
 """HTTP routes."""
 from __future__ import annotations
 
-import hmac
-from datetime import datetime, timezone
+from dataclasses import asdict
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request, Response
@@ -13,7 +13,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from agentops_backend import ingestion, queries, registry, trace_service
+from agentops_backend import ingestion, queries, registry, retention, trace_service
 from agentops_backend.assistant import DiagnosticEngine, DiagnosticReport
 from agentops_backend.assistant.models import DiagnoseAgentRequest, DiagnoseRunRequest
 from agentops_backend.auth import (
@@ -24,20 +24,27 @@ from agentops_backend.auth import (
     require_admin,
     require_project_access,
     require_scope,
+    safe_equals,
 )
-from agentops_backend.errors import ApiError
+from agentops_backend.errors import ApiError, not_found
 from agentops_backend.models import Agent, Project
+from agentops_backend.security import enforce_rate
 from agentops_backend.schemas import (
     SAFE_ID_PATTERN,
     AgentCreate,
     AgentOut,
     ApiKeyCreate,
     ApiKeyCreated,
+    ApiKeyOut,
+    ApiKeyRotate,
+    ApiKeyRotated,
     CorrelationLinks,
     ErrorSummaryOut,
     IngestResult,
     ProjectCreate,
     ProjectOut,
+    PurgeResultOut,
+    RetentionPurgeRequest,
     RunDetailOut,
     RunListOut,
     RunStatus,
@@ -83,7 +90,7 @@ def _require_metrics_access(
             return  # local convenience only; documented in docs/observability.md
         raise ApiError(503, "metrics_disabled", "Metrics endpoint is not enabled on this server.")
     token = credentials.credentials if credentials is not None else _bearer_token(request)
-    if token is None or not hmac.compare_digest(token, configured):
+    if token is None or not safe_equals(token, configured):
         raise ApiError(
             401, "unauthorized", "Missing or invalid metrics credentials.",
             headers={"WWW-Authenticate": "Bearer"},
@@ -132,12 +139,22 @@ def _utc(dt: Optional[datetime]) -> Optional[datetime]:
     return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)
 
 
-def _range(after: Optional[datetime], before: Optional[datetime]):
+def _range(
+    after: Optional[datetime],
+    before: Optional[datetime],
+    max_days: Optional[int] = None,
+):
     after, before = _utc(after), _utc(before)
     if after and before and after >= before:
         raise ApiError(
             422, "invalid_time_range", "started_after must be earlier than started_before."
         )
+    if max_days is not None and after is not None:
+        end = before or datetime.now(timezone.utc)
+        if end - after > timedelta(days=max_days):
+            raise ApiError(
+                422, "time_window_too_large", f"Query window exceeds {max_days} days."
+            )
     return after, before
 
 
@@ -179,6 +196,7 @@ def get_agent(
 @query_router.get("/{project_id}/runs", response_model=RunListOut)
 def list_runs(
     project_id: str,
+    request: Request,
     agent_id: Optional[str] = Query(default=None, pattern=SAFE_ID_PATTERN),
     status: Optional[RunStatus] = None,
     environment: Optional[str] = Query(default=None, max_length=32),
@@ -190,7 +208,14 @@ def list_runs(
     session: Session = Depends(get_session),
 ) -> RunListOut:
     _scoped(principal, project_id)
-    after, before = _range(started_after, started_before)
+    settings = request.app.state.settings
+    after, before = _range(started_after, started_before, settings.rest_max_window_days)
+    if (page - 1) * page_size > settings.max_page_offset:
+        raise ApiError(
+            422,
+            "page_out_of_range",
+            "Page is too deep; narrow the results with started_after/started_before.",
+        )
     return queries.list_runs(
         session,
         project_id,
@@ -219,6 +244,7 @@ def get_run(
 @query_router.get("/{project_id}/errors/summary", response_model=ErrorSummaryOut)
 def get_error_summary(
     project_id: str,
+    request: Request,
     agent_id: Optional[str] = Query(default=None, pattern=SAFE_ID_PATTERN),
     started_after: Optional[datetime] = None,
     started_before: Optional[datetime] = None,
@@ -226,7 +252,9 @@ def get_error_summary(
     session: Session = Depends(get_session),
 ) -> ErrorSummaryOut:
     _scoped(principal, project_id)
-    after, before = _range(started_after, started_before)
+    after, before = _range(
+        started_after, started_before, request.app.state.settings.rest_max_window_days
+    )
     return queries.error_summary(
         session, project_id, agent_id=agent_id, started_after=after, started_before=before
     )
@@ -371,6 +399,9 @@ def diagnose_run(
     principal: Principal = Depends(require_scope("read")),
 ) -> DiagnosticReport:
     _scoped(principal, project_id)
+    enforce_rate(
+        request, "diagnose", project_id, request.app.state.settings.rate_limit_diagnose_per_minute
+    )
     return _engine(request).diagnose_run(
         _bearer_token(request), body.run_id, project_id=project_id, question=body.question
     )
@@ -389,6 +420,9 @@ def diagnose_agent(
     principal: Principal = Depends(require_scope("read")),
 ) -> DiagnosticReport:
     _scoped(principal, project_id)
+    enforce_rate(
+        request, "diagnose", project_id, request.app.state.settings.rate_limit_diagnose_per_minute
+    )
     after, before = _range(body.started_after, body.started_before)
     return _engine(request).diagnose_agent(
         _bearer_token(request), body.agent_id, project_id=project_id,
@@ -426,3 +460,76 @@ def admin_create_api_key(
     return registry.create_api_key(
         session, request.app.state.settings.secret_key, project_id, body
     )
+
+
+@admin_router.get("/projects/{project_id}/api-keys", response_model=list[ApiKeyOut])
+def admin_list_api_keys(
+    project_id: str, session: Session = Depends(get_session)
+) -> list[ApiKeyOut]:
+    return registry.list_api_keys(session, project_id)
+
+
+@admin_router.post("/projects/{project_id}/api-keys/{key_id}/revoke", response_model=ApiKeyOut)
+def admin_revoke_api_key(
+    project_id: str, key_id: int, session: Session = Depends(get_session)
+) -> ApiKeyOut:
+    return registry.revoke_api_key(session, project_id, key_id)
+
+
+@admin_router.post(
+    "/projects/{project_id}/api-keys/{key_id}/rotate", response_model=ApiKeyRotated
+)
+def admin_rotate_api_key(
+    project_id: str,
+    key_id: int,
+    request: Request,
+    body: Optional[ApiKeyRotate] = None,
+    session: Session = Depends(get_session),
+) -> ApiKeyRotated:
+    return registry.rotate_api_key(
+        session,
+        request.app.state.settings.secret_key,
+        project_id,
+        key_id,
+        revoke_old=(body or ApiKeyRotate()).revoke_old,
+    )
+
+
+@admin_router.post(
+    "/retention/purge",
+    response_model=PurgeResultOut,
+    summary="Purge expired run data (dry run by default)",
+)
+def admin_retention_purge(
+    body: RetentionPurgeRequest,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> PurgeResultOut:
+    days = body.older_than_days or request.app.state.settings.run_retention_days
+    result = retention.purge_older_than(
+        session,
+        days=days,
+        project_id=body.project_id,
+        dry_run=body.dry_run,
+        max_batches=body.max_batches,
+    )
+    return PurgeResultOut(**asdict(result))
+
+
+@admin_router.delete(
+    "/projects/{project_id}/telemetry",
+    response_model=PurgeResultOut,
+    summary="Erase all run data of one project (dry run by default)",
+)
+def admin_delete_project_telemetry(
+    project_id: str,
+    dry_run: bool = True,
+    max_batches: int = Query(default=100, ge=1, le=1000),
+    session: Session = Depends(get_session),
+) -> PurgeResultOut:
+    if session.get(Project, project_id) is None:
+        raise not_found("Project not found.")
+    result = retention.purge_project_telemetry(
+        session, project_id, dry_run=dry_run, max_batches=max_batches
+    )
+    return PurgeResultOut(**asdict(result))

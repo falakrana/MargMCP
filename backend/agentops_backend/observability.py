@@ -147,20 +147,21 @@ class Observability:
         if et in ("llm_call_completed", "llm_call_failed"):
             status = "ok" if et == "llm_call_completed" else "error"
             provider, model = m.provider(data.get("provider")), m.model(data.get("model"))
+            llm_agent, provider, model = m.llm_series((agent, provider, model))
             m.llm_calls_total.labels(
-                agent_id=agent, provider=provider, model=model, status=status
+                agent_id=llm_agent, provider=provider, model=model, status=status
             ).inc()
             duration_ms = _int(data.get("duration_ms"))
             if duration_ms is not None:
                 m.llm_call_duration.labels(
-                    agent_id=agent, provider=provider, model=model
+                    agent_id=llm_agent, provider=provider, model=model
                 ).observe(duration_ms / 1000)
             if et == "llm_call_completed":
                 for key, kind in (("prompt_tokens", "prompt"), ("completion_tokens", "completion")):
                     value = _int(data.get(key))
                     if value:
                         m.tokens_total.labels(
-                            agent_id=agent, provider=provider, model=model, token_type=kind
+                            agent_id=llm_agent, provider=provider, model=model, token_type=kind
                         ).inc(value)
             self._child_span(obs, "llm.chat", duration_ms, error=status == "error", attrs={
                 "llm.provider": data.get("provider"),
@@ -172,10 +173,11 @@ class Observability:
         elif et in ("tool_call_completed", "tool_call_failed"):
             status = "ok" if et == "tool_call_completed" else "error"
             tool = m.tool(data.get("tool_name"))
-            m.tool_calls_total.labels(agent_id=agent, tool_name=tool, status=status).inc()
+            tool_agent, tool = m.tool_series((agent, tool))
+            m.tool_calls_total.labels(agent_id=tool_agent, tool_name=tool, status=status).inc()
             duration_ms = _int(data.get("duration_ms"))
             if duration_ms is not None:
-                m.tool_call_duration.labels(agent_id=agent, tool_name=tool).observe(
+                m.tool_call_duration.labels(agent_id=tool_agent, tool_name=tool).observe(
                     duration_ms / 1000
                 )
             self._child_span(

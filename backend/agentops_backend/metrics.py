@@ -53,6 +53,32 @@ class BoundedLabel:
             return text
 
 
+class SeriesCap:
+    """Bound the number of distinct label *combinations* a metric family emits.
+
+    Per-label caps multiply: 200 agents x 50 providers x 100 models would allow
+    one million series per metric. This caps the product; once full, unseen
+    combinations collapse to ``other`` for every label.
+    """
+
+    def __init__(self, max_series: int) -> None:
+        self._max = max_series
+        self._seen: set[tuple[str, ...]] = set()
+        self._lock = threading.Lock()
+
+    def __call__(self, key: tuple[str, ...]) -> tuple[str, ...]:
+        with self._lock:
+            if key in self._seen:
+                return key
+            if len(self._seen) >= self._max:
+                return tuple(BoundedLabel.OVERFLOW for _ in key)
+            self._seen.add(key)
+            return key
+
+    def __len__(self) -> int:
+        return len(self._seen)
+
+
 class Metrics:
     """All backend metrics, bound to a private registry."""
 
@@ -65,6 +91,10 @@ class Metrics:
         self.model = BoundedLabel(max_values=100)
         self.tool = BoundedLabel(max_values=100)
         self.code = BoundedLabel(max_values=50)
+        # Combination caps (see SeriesCap). Worst case per family stays in the
+        # low tens of thousands of series instead of millions.
+        self.llm_series = SeriesCap(max_series=2000)
+        self.tool_series = SeriesCap(max_series=2000)
 
         self.runs_total = Counter(
             "agentops_runs_total", "Runs reaching a terminal status.",
@@ -123,6 +153,11 @@ class Metrics:
             "agentops_observability_errors_total",
             "Internal errors while recording metrics/spans (swallowed).",
             registry=r,
+        )
+        self.rate_limited_total = Counter(
+            "agentops_rate_limited_total",
+            "Requests rejected with 429, by limiter scope.",
+            ["scope"], registry=r,
         )
         self.build_info = Gauge(
             "agentops_backend_info", "Backend build information.", ["version"], registry=r,
