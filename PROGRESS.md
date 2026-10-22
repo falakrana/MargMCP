@@ -683,7 +683,8 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
   - Resolved terminal spam in backend process (`ProcessId: 14772`): `logging_config.py` was unconditionally setting `record.args = None`, which conflicted with `uvicorn.access` logger where `AccessFormatter` unpacks a 5-tuple `(client_addr, method, full_path, http_version, status_code)`. This caused `TypeError: cannot unpack non-iterable NoneType object` and printed a 40-line traceback on every request. Updated `install_scrubbing()` to scrub tuple elements when `record.name == "uvicorn.access"`.
   - Added UI Diagnostic Assistant integration to dashboard:
     - Added `DiagnosticReport` schema definitions and `api.diagnostics` methods to `frontend/src/api.ts`.
-    - Added "AI Diagnose" header action button and "AI Diagnosis" tab to `frontend/src/pages/RunDetailPage.tsx` with query bar, hypotheses with confidence tags, direct findings, next checks, unresolved questions, and cited evidence viewer.
+    - Improved API error message parsing in `frontend/src/api.ts` to unwrap `body?.error?.message` so rate-limiting and assistant errors display clear explanations instead of generic HTTP status codes.
+    - Added "AI Diagnose" header action button and "AI Diagnosis" tab to `frontend/src/pages/RunDetailPage.tsx`, strictly conditioned on `run.status === 'error'` so successful/running runs do not expose the diagnosis button or consume LLM API quota unnecessarily. Includes query bar, hypotheses with confidence tags, direct findings, next checks, unresolved questions, and cited evidence viewer.
 - **Files added/modified:**
   - `backend/agentops_backend/logging_config.py`
   - `frontend/src/api.ts`

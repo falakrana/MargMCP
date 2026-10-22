@@ -179,6 +179,8 @@ export function RunDetailPage() {
 
   const tl = timelineQ.data;
   const run = tl?.run;
+  const isError = run?.status === 'error';
+  const effectiveTab = !isError && activeTab === 'AI Diagnosis' ? 'Timeline' : activeTab;
 
   if (timelineQ.isError) {
     return (
@@ -230,22 +232,24 @@ export function RunDetailPage() {
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {run && <StatusBadge status={run.status} />}
-            <button
-              id="run-diagnose-btn"
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={() => {
-                setActiveTab('AI Diagnosis');
-                if (!diagReport && !isDiagnosing) {
-                  void handleDiagnose();
-                }
-              }}
-              disabled={isDiagnosing}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <Sparkles size={13} />
-              {isDiagnosing ? 'Diagnosing...' : 'AI Diagnose'}
-            </button>
+            {isError && (
+              <button
+                id="run-diagnose-btn"
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  setActiveTab('AI Diagnosis');
+                  if (!diagReport && !isDiagnosing) {
+                    void handleDiagnose();
+                  }
+                }}
+                disabled={isDiagnosing}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Sparkles size={13} />
+                {isDiagnosing ? 'Diagnosing...' : 'AI Diagnose'}
+              </button>
+            )}
             {tl?.trace_link && (
               <a
                 id="run-trace-link"
@@ -344,13 +348,13 @@ export function RunDetailPage() {
       <div className="card">
         <div style={{ padding: '0 20px' }}>
           <Tabs
-            tabs={['Timeline', 'Events', 'Correlation', 'AI Diagnosis']}
-            active={activeTab}
+            tabs={isError ? ['Timeline', 'Events', 'Correlation', 'AI Diagnosis'] : ['Timeline', 'Events', 'Correlation']}
+            active={effectiveTab}
             onChange={setActiveTab}
           />
         </div>
 
-        {activeTab === 'Timeline' && (
+        {effectiveTab === 'Timeline' && (
           <div style={{ padding: '12px 16px' }}>
             {timelineQ.isLoading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
@@ -375,7 +379,7 @@ export function RunDetailPage() {
           </div>
         )}
 
-        {activeTab === 'Events' && (
+        {effectiveTab === 'Events' && (
           <div>
             {timelineQ.isLoading ? (
               <SkeletonRows rows={8} />
@@ -397,7 +401,7 @@ export function RunDetailPage() {
           </div>
         )}
 
-        {activeTab === 'Correlation' && (
+        {effectiveTab === 'Correlation' && (
           <div className="card-body">
             {timelineQ.isLoading ? (
               <SkeletonRows rows={4} />
@@ -448,7 +452,7 @@ export function RunDetailPage() {
           </div>
         )}
 
-        {activeTab === 'AI Diagnosis' && (
+        {isError && effectiveTab === 'AI Diagnosis' && (
           <div style={{ padding: '20px 24px' }}>
             {/* Top query bar */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>

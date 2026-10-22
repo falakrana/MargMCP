@@ -55,8 +55,9 @@ async function request<T>(
     let message = `HTTP ${res.status}`;
     try {
       const body = await res.json();
-      code = body.code ?? code;
-      message = body.message ?? message;
+      const errObj = body?.error ?? body ?? {};
+      code = errObj.code ?? code;
+      message = errObj.message ?? message;
     } catch {
       // ignore
     }
