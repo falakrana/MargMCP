@@ -163,7 +163,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 9 — Security, Reliability, and Performance Hardening
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 
 - [X] Threat model review (`docs/threat-model.md`)
 - [X] Auth/authz/isolation/key-rotation verification (safe_equals, key rotation/revocation endpoints)

@@ -4,7 +4,7 @@
 
 **Enterprise-Grade Observability, Distributed Tracing & Diagnostic Intelligence for AI Agents**
 
-[![Phase Status](https://img.shields.io/badge/Phase%206-READY__FOR__REVIEW-blue.svg)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/IMPLEMENTATION_STATUS.md)
+[![Phase Status](https://img.shields.io/badge/Phase%209-APPROVED-green.svg)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/IMPLEMENTATION_STATUS.md)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/backend/pyproject.toml)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688?logo=fastapi)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/backend/agentops_backend/main.py)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/frontend/package.json)
@@ -104,8 +104,7 @@ The project strictly follows a structured 10-phase engineering workflow defined 
 | **Phase 5** | Trace Details & Run History | `APPROVED` | Waterfall timeline engine, correlation links (172 tests total) |
 | **Phase 6** | Monitoring Dashboard | `APPROVED` | React 19 + TypeScript + Vite UI (20 frontend tests, 0 lint errors) |
 | **Phase 7** | MCP Server & Read-Only Monitoring Tools | `APPROVED` | [`docs/mcp-server.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/mcp-server.md) (7 read tools, FastMCP, 42 tests) |
-| **Phase 8** | AI Diagnostic Assistant | `APPROVED` | [`docs/diagnostic-assistant.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/diagnostic-assistant.md) (68 tests, Groq/OpenAI, 94% coverage) |
-| **Phase 9** | Security, Reliability & Performance Hardening | `NOT_STARTED` | Rate limiting, fuzz testing, chaos resilience |
+| **Phase 9** | Security, Reliability & Performance Hardening | `APPROVED` | [`docs/threat-model.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/threat-model.md), [`docs/security-and-performance-findings.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/security-and-performance-findings.md) (301 backend tests, 9 SDK tests, safe_equals, rate limiting, body caps, SeriesCap) |
 | **Phase 10**| Deployment, End-to-End Pilot & Release Readiness | `NOT_STARTED` | Production containers, CI/CD, documentation polish |
 
 *For historical session logs and complete audit trails, see [`PROGRESS.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/PROGRESS.md) and [`IMPLEMENTATION_STATUS.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/IMPLEMENTATION_STATUS.md).*

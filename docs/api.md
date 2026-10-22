@@ -40,6 +40,21 @@ curl -X POST localhost:8000/v1/admin/projects/$PID/api-keys -H "Authorization: B
 # -> 201 {"id": 1, "project_id": "...", "name": "prod-sdk", "scopes": ["ingest","read"], "api_key": "aop_..."}
 ```
 
+## API Key Lifecycle (scope `read` or admin)
+
+```bash
+# List active and scheduled-for-expiry API keys for a project
+curl -H "Authorization: Bearer $KEY" localhost:8000/v1/projects/$PID/api-keys
+
+# Rotate an API key: generates a new key and sets an optional grace period on the active key
+curl -X POST localhost:8000/v1/projects/$PID/api-keys/rotate -H "Authorization: Bearer $KEY" \
+  -H 'Content-Type: application/json' -d '{"old_key_grace_hours": 24}'
+# -> 200 {"new_key": "aop_...", "old_key_expires_at": "...", "message": "Key rotated successfully..."}
+
+# Explicitly revoke an API key immediately
+curl -X POST localhost:8000/v1/projects/$PID/api-keys/$KEY_ID/revoke -H "Authorization: Bearer $KEY"
+```
+
 ## Ingestion — `POST /v1/telemetry/events`  (scope `ingest`)
 
 Request (schema v1.0, see `telemetry-schema.md`):
@@ -127,6 +142,33 @@ curl -H "Authorization: Bearer $KEY" \
  "total": 1, "page": 1, "page_size": 10}
 ```
 
+## Retention & Telemetry Purge (Phase 9)
+
+```bash
+# Batch purge telemetry runs and events older than retention threshold across projects
+curl -X POST localhost:8000/v1/retention/purge -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' -d '{"days": 90, "dry_run": false}'
+
+# Project-scoped hard purge of all runs and events for a specific project
+curl -X DELETE localhost:8000/v1/projects/$PID/telemetry -H "Authorization: Bearer $ADMIN"
+```
+
+## Security & Operational Boundaries (Phase 9)
+
+- **Rate Limiting:** Enforces in-process fixed-window limits (default 600 RPM, burst 100). Rejections return `429 Too Many Requests` with standard rate limit headers:
+  - `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+- **Streaming Body Limits:** All requests are capped at `AGENTOPS_MAX_PAYLOAD_BYTES` (1 MiB default). Oversized streaming or chunked payloads immediately return `413 payload_too_large`.
+- **Query Bounds:**
+  - Pagination depth cap: `offset <= 10000` (`max_page_offset`). Deeper offsets return `422 validation_error`.
+  - Historical query window cap: `started_before - started_after <= 90 days` (`rest_max_window_days`). Wider spans return `422 validation_error`.
+- **Security Headers:** Every response includes:
+  - `X-Request-ID`: Traceable request UUID.
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `Content-Security-Policy: default-src 'none'`
+  - `Referrer-Policy: no-referrer`
+  - `Cache-Control: no-store`
+
 ## Health
 
 * `GET /health/live` → `200 {"status":"alive"}`
@@ -143,14 +185,16 @@ curl -H "Authorization: Bearer $KEY" \
 | 404 | `not_found` | Resource missing (or belongs to another project) |
 | 405 | `method_not_allowed` | |
 | 409 | `already_exists` | Duplicate project/agent id |
-| 413 | `payload_too_large` | Body over limit |
-| 422 | `validation_error` | Schema/field validation (see `details`) |
+| 413 | `payload_too_large` | Body over limit (streaming cap enforced) |
+| 422 | `validation_error` | Schema/field validation (see `details`), offset > 10,000, or time window > 90d |
 | 422 | `unsupported_schema_version` | `schema_version` not `"1.0"` |
 | 422 | `batch_too_large` | More than 100 events |
 | 422 | `invalid_time_range` | `started_after >= started_before` |
+| 429 | `rate_limit_exceeded` | Request rate exceeded per-project / per-IP quota |
 | 500 | `internal_error` | Unexpected error (no internals exposed) |
 | 503 | `database_unavailable` | Storage failure; retry |
 | 503 | `not_ready` | Readiness failed |
 | 503 | `admin_disabled` | Admin token not configured |
 
 Per‑event rejection codes (inside a `202` response): `timestamp_out_of_range`, `forbidden_attribute`, `data_too_large`, `invalid_metadata`, `invalid_attributes`, `invalid_trace_id`, `invalid_span_id`, `invalid_token_count`, `invalid_status_transition`, `agent_mismatch`, `unknown_agent`, `project_mismatch`.
+

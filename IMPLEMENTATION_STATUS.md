@@ -7,9 +7,9 @@
 | Field                         | Value                                                |
 | ----------------------------- | ---------------------------------------------------- |
 | **Current Phase**       | Phase 9 — Security, Reliability, and Performance Hardening |
-| **Phase Status**        | `READY_FOR_REVIEW`                                   |
-| **Last Approved Phase** | Phase 8                                              |
-| **Next Phase**          | Phase 10 — Deployment, End-to-End Pilot, and Release Readiness (awaiting explicit approval of Phase 9) |
+| **Phase Status**        | `APPROVED`                                           |
+| **Last Approved Phase** | Phase 9                                              |
+| **Next Phase**          | Phase 10 — Deployment, End-to-End Pilot, and Release Readiness (awaiting explicit instruction to begin) |
 
 ---
 
@@ -25,7 +25,7 @@
 | 6     | Monitoring Dashboard                                        | `APPROVED`         |
 | 7     | MCP Server and Read-Only Monitoring Tools                   | `APPROVED`         |
 | 8     | AI Diagnostic Assistant                                     | `APPROVED`         |
-| 9     | Security, Reliability, and Performance Hardening            | `READY_FOR_REVIEW`  |
+| 9     | Security, Reliability, and Performance Hardening            | `APPROVED`          |
 | 10    | Deployment, End-to-End Pilot, and Release Readiness         | `NOT_STARTED`      |
 
 ---
