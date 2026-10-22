@@ -36,19 +36,14 @@ from agentops_sdk import AgentOps, AgentOpsConfig
 
 
 def create_pilot_client() -> AgentOps:
-    """Initialize AgentOps SDK with fallback defaults for pilot execution."""
-    backend_url = os.environ.get("AGENTOPS_BACKEND_URL", "http://localhost:8000")
-    api_key = os.environ.get("AGENTOPS_API_KEY", "dev_api_key_for_testing_purposes")
-    project_id = os.environ.get("AGENTOPS_PROJECT_ID", "pilot-project")
-
-    config = AgentOpsConfig(
-        endpoint=backend_url,
-        api_key=api_key,
-        project_id=project_id,
-        batch_size=10,
-        flush_interval_seconds=1.0,
-        capture_payloads=True,
-    )
+    """Initialize AgentOps SDK from environment variables (.env)."""
+    config = AgentOpsConfig.from_env()
+    if not config.project_id:
+        config.project_id = os.environ.get("AGENTOPS_PROJECT_ID", "synthetic-demo")
+    if not config.api_key:
+        config.api_key = os.environ.get("AGENTOPS_API_KEY") or os.environ.get("AGENTOPS_MCP_API_KEY")
+    config.flush_interval_seconds = 0.5
+    config.capture_payloads = True
     return AgentOps(config=config)
 
 

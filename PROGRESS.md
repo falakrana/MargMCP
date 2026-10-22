@@ -676,7 +676,33 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Human verification steps:** Follow the Phase 10 Human Verification Checklist below.
 - **Status at end:** `READY_FOR_REVIEW`
 - **Human approval:** None yet. Awaiting explicit owner review and release approval.
-- **Next permitted action:** Wait for human review of Phase 10.
+### 2026-10-22 — Post-Phase 10 Support: Logging Error Fix & UI Diagnostic Button Integration
+
+- **Status at start:** `READY_FOR_REVIEW` (Phase 10)
+- **Work performed:**
+  - Resolved terminal spam in backend process (`ProcessId: 14772`): `logging_config.py` was unconditionally setting `record.args = None`, which conflicted with `uvicorn.access` logger where `AccessFormatter` unpacks a 5-tuple `(client_addr, method, full_path, http_version, status_code)`. This caused `TypeError: cannot unpack non-iterable NoneType object` and printed a 40-line traceback on every request. Updated `install_scrubbing()` to scrub tuple elements when `record.name == "uvicorn.access"`.
+  - Added UI Diagnostic Assistant integration to dashboard:
+    - Added `DiagnosticReport` schema definitions and `api.diagnostics` methods to `frontend/src/api.ts`.
+    - Added "AI Diagnose" header action button and "AI Diagnosis" tab to `frontend/src/pages/RunDetailPage.tsx` with query bar, hypotheses with confidence tags, direct findings, next checks, unresolved questions, and cited evidence viewer.
+- **Files added/modified:**
+  - `backend/agentops_backend/logging_config.py`
+  - `frontend/src/api.ts`
+  - `frontend/src/pages/RunDetailPage.tsx`
+  - `examples/pilot_agent.py`
+  - `PROGRESS.md`
+- **Commands run and actual results:**
+  - `.\.venv\Scripts\pytest backend/tests/test_security_phase9.py -v` — PASS (13 passed in 1.00s).
+  - `.\.venv\Scripts\pytest backend/tests/test_assistant.py` — PASS (68 passed in 10.17s).
+  - `npm run build` (in `frontend/`) — PASS (built in 701ms, 0 errors).
+  - `npm run test` (in `frontend/`) — PASS (20 tests passed in 1.59s).
+  - Live API diagnosis verification (`POST /v1/projects/synthetic-demo/diagnose/run`) — PASS (returned grounded diagnosis for run `7edff42a-1d9d-4039-b95f-3ba097c8f061` in 15.5s using Groq `qwen/qwen3.8-27b`).
+- **Tests added/updated:** None (all existing 383+ tests pass).
+- **Acceptance criteria evidence:** Terminal logging is clean; diagnostic assistant is fully accessible via UI button.
+- **Decisions/assumptions:** Preserved Phase 10 `READY_FOR_REVIEW` status.
+- **Blockers/known limitations:** None.
+- **Status at end:** `READY_FOR_REVIEW` (Phase 10)
+- **Human approval:** Awaiting explicit human owner approval for Phase 10 release.
+- **Next permitted action:** Await human review.
 
 ## Append-only session entry template
 

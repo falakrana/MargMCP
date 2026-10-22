@@ -38,8 +38,13 @@ def install_scrubbing() -> None:
     def factory(*args, **kwargs) -> logging.LogRecord:
         record = previous(*args, **kwargs)
         try:
-            record.msg = scrub_text(record.getMessage())
-            record.args = None
+            if record.name == "uvicorn.access" and isinstance(record.args, tuple):
+                record.args = tuple(
+                    scrub_text(str(a)) if isinstance(a, str) else a for a in record.args
+                )
+            else:
+                record.msg = scrub_text(record.getMessage())
+                record.args = None
             if record.exc_info and not record.exc_text and record.exc_info[0] is not None:
                 record.exc_text = scrub_text("".join(traceback.format_exception(*record.exc_info)))
         except Exception:  # noqa: BLE001 - logging must never raise

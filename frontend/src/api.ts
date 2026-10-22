@@ -266,4 +266,76 @@ export const api = {
       );
     },
   },
+
+  diagnostics: {
+    run: (projectId: string, runId: string, question?: string) =>
+      request<DiagnosticReport>(`/v1/projects/${projectId}/diagnose/run`, {
+        method: 'POST',
+        body: JSON.stringify({ run_id: runId, ...(question ? { question } : {}) }),
+      }),
+    agent: (
+      projectId: string,
+      agentId: string,
+      opts: { started_after?: string; started_before?: string; question?: string } = {},
+    ) =>
+      request<DiagnosticReport>(`/v1/projects/${projectId}/diagnose/agent`, {
+        method: 'POST',
+        body: JSON.stringify({ agent_id: agentId, ...opts }),
+      }),
+  },
 };
+
+export interface DiagnosticScope {
+  kind: 'run' | 'agent';
+  project_id: string;
+  agent_id?: string;
+  run_id?: string;
+  started_after?: string;
+  started_before?: string;
+  question?: string;
+}
+
+export interface DiagnosticFinding {
+  statement: string;
+  evidence: string[];
+}
+
+export interface DiagnosticHypothesis {
+  explanation: string;
+  confidence: 'high' | 'medium' | 'low';
+  evidence: string[];
+  uncertainty?: string;
+}
+
+export interface DiagnosticEvidenceRef {
+  ref: string;
+  type: 'run' | 'span' | 'metric' | 'errors' | 'comparison';
+  summary: string;
+}
+
+export interface DiagnosticMeta {
+  provider?: string;
+  model?: string;
+  tool_calls: number;
+  llm_calls: number;
+  duration_ms: number;
+  generated_at: string;
+  evidence_items: number;
+  llm_skipped: boolean;
+  dropped_uncited_statements: number;
+  rejected_citations: number;
+  blocked_action_claims: number;
+  suspicious_content_detected: number;
+}
+
+export interface DiagnosticReport {
+  scope: DiagnosticScope;
+  findings: DiagnosticFinding[];
+  likely_explanations: DiagnosticHypothesis[];
+  evidence: DiagnosticEvidenceRef[];
+  unknown: string[];
+  next_checks: string[];
+  read_only_notice: string;
+  meta: DiagnosticMeta;
+}
+
