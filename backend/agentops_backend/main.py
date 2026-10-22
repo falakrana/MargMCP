@@ -144,6 +144,20 @@ def create_app(settings: Optional[Settings] = None, span_exporter=None) -> FastA
         err = ApiError(500, "internal_error", "An internal error occurred.")
         return JSONResponse(err.body(), status_code=500)
 
+    @app.get("/healthz", tags=["health"])
+    def _healthz() -> dict:
+        return {"status": "alive"}
+
+    @app.get("/readyz", tags=["health"])
+    def _readyz(request: Request) -> dict:
+        try:
+            with request.app.state.session_factory() as session:
+                from sqlalchemy import text
+                session.execute(text("SELECT 1"))
+        except Exception:
+            raise ApiError(503, "not_ready", "Service is not ready.")
+        return {"status": "ready"}
+
     app.include_router(health_router)
     app.include_router(metrics_router)
     app.include_router(ingest_router)
