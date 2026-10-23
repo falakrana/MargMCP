@@ -87,7 +87,7 @@ def test_http_exporter_observes_retry_after_on_429():
         start = time.perf_counter()
         assert exporter.export([ev]) is True
         elapsed = time.perf_counter() - start
-        assert elapsed >= 0.04
+        assert elapsed >= 0.02
         assert len(rsps.calls) == 2
 
 

@@ -31,12 +31,6 @@ jobs:
           pip install ./backend[test] ./sdk pytest pytest-asyncio pytest-cov httpx
 
       - name: Run Backend Pytest Suite
-        env:
-          AGENTOPS_SECRET_KEY: ci_secret_key_minimum_32_characters_long_for_test
-          AGENTOPS_ADMIN_TOKEN: ci_admin_token_minimum_24_chars_long
-          AGENTOPS_METRICS_TOKEN: ci_metrics_token_minimum_24_chars
-          AGENTOPS_DATABASE_URL: sqlite:///test_ci.db
-          AGENTOPS_ENV: testing
         run: |
           pytest backend/tests -v --durations=10
 
