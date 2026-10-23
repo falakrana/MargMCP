@@ -757,6 +757,30 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Human approval:** Awaiting explicit human owner approval for Phase 10 release.
 - **Next permitted action:** Await PR checks completion and human owner review.
 
+### 2026-10-23 — Post-Phase 10: SDK Background Thread Test Isolation Fix
+
+- **Status at start:** `READY_FOR_REVIEW` (Phase 10)
+- **Work performed:**
+  - Diagnosed final CI build failure in `SDK Test Suite (Python 3.12)`: `test_http_exporter_observes_retry_after_on_429` failed with `assert 3 == 2` on `rsps.calls`.
+  - Identified root cause: in `sdk/tests/test_sdk.py`, the `mock_agentops` client had default `max_retries=2` and `retry_backoff_seconds=0.5`. In `test_telemetry_failure_does_not_crash_agent`, an export failure resulted in a background retry loop exceeding the test shutdown timeout (1.0s), leaking an active worker thread into subsequent test execution. The lingering thread fired its delayed request while `test_http_exporter_observes_retry_after_on_429` was recording calls with `responses.RequestsMock()`.
+  - Configured `mock_agentops` in `sdk/tests/test_sdk.py` with `max_retries=0` and `retry_backoff_seconds=0.01` so background threads terminate immediately on test shutdown.
+  - In `sdk/tests/test_sdk_resilience.py`: filtered `rsps.calls` specifically by the test event's payload (`run_id="r1"`), guaranteeing test isolation.
+- **Files modified:**
+  - `sdk/tests/test_sdk.py`
+  - `sdk/tests/test_sdk_resilience.py`
+  - `PROGRESS.md`
+  - `IMPLEMENTATION_STATUS.md`
+- **Commands run and actual results:**
+  - `pytest sdk/tests -v` — PASS (9 passed in 0.94s, 86% coverage).
+  - `pytest backend/tests/test_e2e_pilot.py -v` — PASS (5 passed in 3.65s).
+- **Tests added/updated:** `sdk/tests/test_sdk.py`, `sdk/tests/test_sdk_resilience.py`.
+- **Acceptance criteria evidence:** SDK test suite executes cleanly in <1s with 0 leaked calls and 100% pass rate across all tests.
+- **Decisions/assumptions:** Application code was not altered; test fixtures and mock boundaries were tightened. Preserved Phase 10 `READY_FOR_REVIEW` status.
+- **Blockers/known limitations:** None.
+- **Status at end:** `READY_FOR_REVIEW` (Phase 10)
+- **Human approval:** Awaiting explicit human owner approval for Phase 10 release.
+- **Next permitted action:** Await PR checks completion and human owner review.
+
 ## Append-only session entry template
 
 Copy this section for each meaningful work session and fill it with observed facts.

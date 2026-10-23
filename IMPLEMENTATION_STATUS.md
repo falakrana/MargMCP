@@ -428,6 +428,7 @@ docs/implementation-plan.md
 IMPLEMENTATION_STATUS.md
 PROGRESS.md
 sdk/pyproject.toml
+sdk/tests/test_sdk.py
 sdk/tests/test_sdk_resilience.py
 ```
 

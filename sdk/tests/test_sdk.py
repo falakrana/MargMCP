@@ -9,11 +9,13 @@ def mock_agentops():
         api_endpoint="http://testserver",
         project_id="test-project",
         agent_id="test-agent",
-        flush_interval_seconds=0.1 # fast flush for tests
+        flush_interval_seconds=0.05,
+        max_retries=0,
+        retry_backoff_seconds=0.01,
     )
     client = AgentOps(config=config)
     yield client
-    client.shutdown(timeout=1.0)
+    client.shutdown(timeout=2.0)
 
 @responses.activate
 def test_successful_run_lifecycle(mock_agentops):
