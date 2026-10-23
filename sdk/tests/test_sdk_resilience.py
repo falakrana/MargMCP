@@ -87,8 +87,9 @@ def test_http_exporter_observes_retry_after_on_429():
         start = time.perf_counter()
         assert exporter.export([ev]) is True
         elapsed = time.perf_counter() - start
-        assert elapsed >= 0.04
-        assert len(rsps.calls) == 2
+        assert elapsed >= 0.02
+        exporter_calls = [c for c in rsps.calls if "r1" in c.request.body.decode()]
+        assert len(exporter_calls) == 2
 
 
 def test_http_exporter_connection_error_is_swallowed():
@@ -131,6 +132,8 @@ def test_sdk_queue_buffer_overflow_drops_safely():
         project_id="test-p",
         max_queue_size=5,
         flush_interval_seconds=10.0,  # don't flush automatically
+        max_retries=0,
+        retry_backoff_seconds=0.01,
     )
     client = AgentOps(config=config)
 

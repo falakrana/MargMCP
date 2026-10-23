@@ -163,7 +163,7 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 9 — Security, Reliability, and Performance Hardening
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 
 - [X] Threat model review (`docs/threat-model.md`)
 - [X] Auth/authz/isolation/key-rotation verification (safe_equals, key rotation/revocation endpoints)
@@ -184,17 +184,17 @@ This is the operational checklist derived from `implementation.md`. Each phase h
 
 ## Phase 10 — Deployment, End-to-End Pilot, and Release Readiness
 
-**Status:** `NOT_STARTED`
+**Status:** `READY_FOR_REVIEW`
 
-- [ ] Deployment target review
-- [ ] Production container definitions
-- [ ] Dev vs. prod config separation
-- [ ] HTTPS / reverse proxy config
-- [ ] Secret injection + backup/restore procedures
-- [ ] CI checks (lint, type, test, build)
-- [ ] Operational runbook
-- [ ] Non-production deployment
-- [ ] Pilot agent instrumentation
-- [ ] Full path validation (agent → SDK → ingestion → DB → metrics → traces → dashboard → MCP → assistant)
-- [ ] Failure case testing
-- [ ] Release readiness report
+- [X] Deployment target review (`docs/runbook.md`, `docs/release-readiness-report.md`)
+- [X] Production container definitions (`backend/Dockerfile`, `frontend/Dockerfile`, `infra/docker-compose.prod.yml`)
+- [X] Dev vs. prod config separation (`.env.example`, `infra/docker-compose.prod.yml`)
+- [X] HTTPS / reverse proxy config (`frontend/nginx.conf`, SPA routing, backend reverse proxy)
+- [X] Secret injection + backup/restore procedures (`scripts/backup_db.py`, `docs/runbook.md`)
+- [X] CI checks (lint, type, test, build) (`.github/workflows/ci.yml`)
+- [X] Operational runbook (`docs/runbook.md`)
+- [X] Non-production deployment (local live verified against Neon/SQLite and Vite frontend)
+- [X] Pilot agent instrumentation (`examples/pilot_agent.py`)
+- [X] Full path validation (agent → SDK → ingestion → DB → metrics → traces → dashboard → MCP → assistant) (`backend/tests/test_e2e_pilot.py`)
+- [X] Failure case testing (`backend/tests/test_e2e_pilot.py`)
+- [X] Release readiness report (`docs/release-readiness-report.md`)

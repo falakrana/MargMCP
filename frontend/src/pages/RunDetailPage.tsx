@@ -1,10 +1,21 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ExternalLink, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  ExternalLink,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  Sparkles,
+  Brain,
+  ShieldCheck,
+  CheckCircle2,
+  HelpCircle,
+  RefreshCw,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
-import type { SpanOut, EventOut } from '../api';
+import type { SpanOut, EventOut, DiagnosticReport } from '../api';
 import { StatusBadge, Spinner, Alert, Tabs, Pagination, EmptyState, SkeletonRows } from '../components/ui';
 import { fmtDatetime, fmtDuration, fmtId } from '../utils';
 
@@ -134,6 +145,26 @@ export function RunDetailPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Timeline');
   const [eventPage, setEventPage] = useState(1);
+  const [diagReport, setDiagReport] = useState<DiagnosticReport | null>(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [diagError, setDiagError] = useState<string | null>(null);
+  const [diagQuestion, setDiagQuestion] = useState('');
+  const [showEvidence, setShowEvidence] = useState(false);
+
+  const handleDiagnose = async (questionText?: string) => {
+    if (!projectId || !runId) return;
+    setIsDiagnosing(true);
+    setDiagError(null);
+    try {
+      const rep = await api.diagnostics.run(projectId, runId, questionText || undefined);
+      setDiagReport(rep);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Diagnostic request failed';
+      setDiagError(msg);
+    } finally {
+      setIsDiagnosing(false);
+    }
+  };
 
   const timelineQ = useQuery({
     queryKey: ['timeline', projectId, runId, eventPage],
@@ -148,6 +179,8 @@ export function RunDetailPage() {
 
   const tl = timelineQ.data;
   const run = tl?.run;
+  const isError = run?.status === 'error';
+  const effectiveTab = !isError && activeTab === 'AI Diagnosis' ? 'Timeline' : activeTab;
 
   if (timelineQ.isError) {
     return (
@@ -199,6 +232,24 @@ export function RunDetailPage() {
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {run && <StatusBadge status={run.status} />}
+            {isError && (
+              <button
+                id="run-diagnose-btn"
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  setActiveTab('AI Diagnosis');
+                  if (!diagReport && !isDiagnosing) {
+                    void handleDiagnose();
+                  }
+                }}
+                disabled={isDiagnosing}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Sparkles size={13} />
+                {isDiagnosing ? 'Diagnosing...' : 'AI Diagnose'}
+              </button>
+            )}
             {tl?.trace_link && (
               <a
                 id="run-trace-link"
@@ -297,13 +348,13 @@ export function RunDetailPage() {
       <div className="card">
         <div style={{ padding: '0 20px' }}>
           <Tabs
-            tabs={['Timeline', 'Events', 'Correlation']}
-            active={activeTab}
+            tabs={isError ? ['Timeline', 'Events', 'Correlation', 'AI Diagnosis'] : ['Timeline', 'Events', 'Correlation']}
+            active={effectiveTab}
             onChange={setActiveTab}
           />
         </div>
 
-        {activeTab === 'Timeline' && (
+        {effectiveTab === 'Timeline' && (
           <div style={{ padding: '12px 16px' }}>
             {timelineQ.isLoading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
@@ -328,7 +379,7 @@ export function RunDetailPage() {
           </div>
         )}
 
-        {activeTab === 'Events' && (
+        {effectiveTab === 'Events' && (
           <div>
             {timelineQ.isLoading ? (
               <SkeletonRows rows={8} />
@@ -350,7 +401,7 @@ export function RunDetailPage() {
           </div>
         )}
 
-        {activeTab === 'Correlation' && (
+        {effectiveTab === 'Correlation' && (
           <div className="card-body">
             {timelineQ.isLoading ? (
               <SkeletonRows rows={4} />
@@ -398,6 +449,232 @@ export function RunDetailPage() {
                 )}
               </div>
             ) : null}
+          </div>
+        )}
+
+        {isError && effectiveTab === 'AI Diagnosis' && (
+          <div style={{ padding: '20px 24px' }}>
+            {/* Top query bar */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+              <input
+                id="diagnostic-question-input"
+                type="text"
+                className="input"
+                placeholder="Ask a specific diagnostic question (e.g. Why did this run fail? Was it slow?)"
+                value={diagQuestion}
+                onChange={(e) => setDiagQuestion(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !isDiagnosing && void handleDiagnose(diagQuestion)}
+                style={{ flex: 1 }}
+              />
+              <button
+                id="submit-diagnose-btn"
+                type="button"
+                className="btn btn-primary"
+                disabled={isDiagnosing}
+                onClick={() => void handleDiagnose(diagQuestion)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}
+              >
+                {isDiagnosing ? <Spinner /> : <Sparkles size={14} />}
+                {isDiagnosing ? 'Analyzing...' : diagReport ? 'Re-diagnose' : 'Run AI Diagnosis'}
+              </button>
+            </div>
+
+            {diagError && (
+              <div className="alert alert-error" style={{ marginBottom: 16 }}>
+                <AlertTriangle size={15} />
+                <span>{diagError}</span>
+              </div>
+            )}
+
+            {isDiagnosing ? (
+              <div style={{ padding: '60px 20px', textAlign: 'center', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                  <Spinner />
+                </div>
+                <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', marginBottom: 6 }}>
+                  Synthesizing Root-Cause Diagnosis...
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', maxWidth: 480, margin: '0 auto' }}>
+                  The diagnostic engine is collecting telemetry spans, error records, baseline comparisons, and prompting the configured LLM with strict evidence citations.
+                </div>
+              </div>
+            ) : !diagReport ? (
+              <div style={{ padding: '50px 20px', textAlign: 'center', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-medium)' }}>
+                <Brain size={36} style={{ color: 'var(--accent-500)', marginBottom: 12 }} />
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
+                  AI Root-Cause Diagnostic Assistant
+                </h3>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', maxWidth: 520, margin: '0 auto 20px', lineHeight: 1.5 }}>
+                  Investigate execution failures, latency anomalies, and tool execution issues. The assistant queries historical runs and traces through a strictly read-only layer with zero hallucinations.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => void handleDiagnose()}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Sparkles size={14} /> Diagnose Run Now
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Notice & Meta */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--accent-50)', border: '1px solid var(--accent-200)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--accent-700)' }}>
+                    <ShieldCheck size={16} />
+                    <span>{diagReport.read_only_notice}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
+                    {diagReport.meta.model && (
+                      <span className="mono" style={{ background: 'var(--bg-base)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                        Model: {diagReport.meta.model} ({diagReport.meta.provider ?? 'ai'})
+                      </span>
+                    )}
+                    <span style={{ background: 'var(--bg-base)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                      {diagReport.meta.tool_calls} tool queries
+                    </span>
+                    <span style={{ background: 'var(--bg-base)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                      {diagReport.meta.evidence_items} evidence items
+                    </span>
+                    <span style={{ background: 'var(--bg-base)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                      {(diagReport.meta.duration_ms / 1000).toFixed(1)}s
+                    </span>
+                  </div>
+                </div>
+
+                {/* Likely Explanations */}
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Brain size={16} style={{ color: 'var(--accent-500)' }} />
+                    Likely Explanations & Hypotheses
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {diagReport.likely_explanations.map((hyp, i) => (
+                      <div key={i} style={{ padding: '14px 16px', background: 'var(--bg-base)', border: '1px solid var(--border-medium)', borderRadius: 'var(--radius-md)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            padding: '2px 6px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: hyp.confidence === 'high' ? 'var(--status-ok-bg)' : hyp.confidence === 'medium' ? 'var(--status-running-bg)' : 'var(--bg-muted)',
+                            color: hyp.confidence === 'high' ? 'var(--status-ok-text)' : hyp.confidence === 'medium' ? 'var(--status-running-text)' : 'var(--text-secondary)',
+                            border: `1px solid ${hyp.confidence === 'high' ? 'var(--status-ok-border)' : hyp.confidence === 'medium' ? 'var(--status-running-border)' : 'var(--border-light)'}`,
+                          }}>
+                            {hyp.confidence} confidence
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 13.5, color: 'var(--text-primary)', lineHeight: 1.5, marginBottom: 8 }}>
+                          {hyp.explanation}
+                        </div>
+                        {hyp.uncertainty && (
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontStyle: 'italic', marginBottom: 8 }}>
+                            Uncertainty: {hyp.uncertainty}
+                          </div>
+                        )}
+                        {hyp.evidence.length > 0 && (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                            <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Evidence:</span>
+                            {hyp.evidence.map((ev, ei) => (
+                              <span key={ei} className="mono" style={{ fontSize: 11, background: 'var(--bg-muted)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                                {ev}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Direct Findings */}
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <CheckCircle2 size={16} style={{ color: 'var(--status-ok-dot)' }} />
+                    Direct Observed Facts (Verified Evidence)
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {diagReport.findings.map((f, i) => (
+                      <div key={i} style={{ padding: '12px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)' }}>
+                        <div style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 6, lineHeight: 1.4 }}>
+                          {f.statement}
+                        </div>
+                        {f.evidence.length > 0 && (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                            {f.evidence.map((ev, ei) => (
+                              <span key={ei} className="mono" style={{ fontSize: 11, background: 'var(--bg-base)', padding: '1px 5px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>
+                                {ev}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommended Next Checks & Unknowns */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                  {diagReport.next_checks.length > 0 && (
+                    <div style={{ padding: '14px 16px', background: 'var(--bg-base)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)' }}>
+                      <h5 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <RefreshCw size={14} style={{ color: 'var(--accent-500)' }} /> Recommended Next Checks
+                      </h5>
+                      <ul style={{ paddingLeft: 18, margin: 0, fontSize: 12.5, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {diagReport.next_checks.map((nc, i) => (
+                          <li key={i}>{nc}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {diagReport.unknown.length > 0 && (
+                    <div style={{ padding: '14px 16px', background: 'var(--bg-base)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)' }}>
+                      <h5 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <HelpCircle size={14} style={{ color: 'var(--status-running-dot)' }} /> Unresolved Questions
+                      </h5>
+                      <ul style={{ paddingLeft: 18, margin: 0, fontSize: 12.5, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {diagReport.unknown.map((u, i) => (
+                          <li key={i}>{u}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Evidence citations toggle */}
+                <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: 14 }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setShowEvidence((v) => !v)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)' }}
+                  >
+                    {showEvidence ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span>{showEvidence ? 'Hide' : 'View'} Cited Evidence Records ({diagReport.evidence.length})</span>
+                  </button>
+
+                  {showEvidence && (
+                    <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {diagReport.evidence.map((ev, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', padding: '6px 10px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', fontSize: 12 }}>
+                          <span className="mono" style={{ fontWeight: 500, color: 'var(--accent-600)', minWidth: 60 }}>
+                            {ev.type}
+                          </span>
+                          <span className="mono" style={{ color: 'var(--text-secondary)', minWidth: 200 }}>
+                            {ev.ref}
+                          </span>
+                          <span style={{ color: 'var(--text-primary)' }}>
+                            {ev.summary}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

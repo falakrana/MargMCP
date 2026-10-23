@@ -23,6 +23,11 @@ dev = [
     "pytest-cov>=4.1.0",
     "responses>=0.24.1",
 ]
+test = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "responses>=0.24.1",
+]
 
 [tool.setuptools.packages.find]
 include = ["agentops_sdk*"]
