@@ -420,11 +420,14 @@ scripts/backup_db.py
 ## Files Modified in Phase 10
 
 ```
+.github/workflows/ci.yml
 backend/Dockerfile
 backend/agentops_backend/main.py
+backend/pyproject.toml
 docs/implementation-plan.md
 IMPLEMENTATION_STATUS.md
 PROGRESS.md
+sdk/pyproject.toml
 ```
 
 

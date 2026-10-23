@@ -705,6 +705,35 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Human approval:** Awaiting explicit human owner approval for Phase 10 release.
 - **Next permitted action:** Await human review.
 
+### 2026-10-23 — Post-Phase 10: CI Workflow & Test Dependencies Fix
+
+- **Status at start:** `READY_FOR_REVIEW` (Phase 10)
+- **Work performed:**
+  - Diagnosed CI build failures on pull request where 10 matrix jobs failed (6 backend tests, 4 SDK tests) while frontend build and hygiene checks passed.
+  - Identified root causes:
+    1. `backend/tests/test_infra_config.py` failed with `ModuleNotFoundError: No module named 'yaml'` because `backend/pyproject.toml` only specified `dev` optional-dependencies, while CI called `pip install ./backend[test]`.
+    2. `backend/tests/test_e2e_pilot.py` failed with `ModuleNotFoundError: No module named 'agentops_sdk'` because `./sdk` was not installed in the CI backend test job.
+    3. SDK test suite failed with `ModuleNotFoundError: No module named 'responses'` because CI ran `pip install ./sdk` without the test extra dependencies (`responses`).
+  - Added `test` optional-dependencies group to `backend/pyproject.toml` and `sdk/pyproject.toml`.
+  - Updated `.github/workflows/ci.yml` to install `./backend[test] ./sdk` for backend tests and `./sdk[test]` for SDK tests.
+- **Files modified:**
+  - `.github/workflows/ci.yml`
+  - `backend/pyproject.toml`
+  - `sdk/pyproject.toml`
+  - `PROGRESS.md`
+  - `IMPLEMENTATION_STATUS.md`
+- **Commands run and actual results:**
+  - `pytest sdk/tests -v` — PASS (9 passed in 3.45s).
+  - `pytest backend/tests/test_infra_config.py -v` — PASS (13 passed in 0.13s).
+  - `pytest backend/tests/test_e2e_pilot.py -v` — PASS (5 passed in 3.40s).
+- **Tests added/updated:** None (CI environment and build dependency fix).
+- **Acceptance criteria evidence:** CI workflow configuration now correctly installs all required cross-package dependencies (`agentops_sdk`, `pyyaml`, `responses`).
+- **Decisions/assumptions:** Maintained backward-compatibility by defining both `dev` and `test` groups in pyproject files. Preserved Phase 10 `READY_FOR_REVIEW` status.
+- **Blockers/known limitations:** None.
+- **Status at end:** `READY_FOR_REVIEW` (Phase 10)
+- **Human approval:** Awaiting explicit human owner approval for Phase 10 release.
+- **Next permitted action:** Await human review / PR check completion.
+
 ## Append-only session entry template
 
 Copy this section for each meaningful work session and fill it with observed facts.

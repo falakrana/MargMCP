@@ -38,6 +38,13 @@ dev = [
     "requests>=2.31",  # SDK package imports it; needed by the SDK wire-compat test
     "pyyaml>=6.0",  # validates infra/ YAML and Grafana provisioning in tests
 ]
+test = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "httpx>=0.26",
+    "requests>=2.31",
+    "pyyaml>=6.0",
+]
 
 [tool.setuptools.packages.find]
 include = ["agentops_backend*"]
