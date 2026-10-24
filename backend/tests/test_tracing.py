@@ -11,13 +11,13 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 from opentelemetry.trace import StatusCode
 from prometheus_client.parser import text_string_to_metric_families
 
-from agentops_backend.main import create_app
+from marg_backend.main import create_app
 from tests.conftest import Tenant, full_run, make_event, make_settings
 
 ALLOWED_SPAN_ATTRS = {
-    "agentops.project_id", "agentops.agent_id", "agentops.run_id", "agentops.environment",
-    "agentops.run_status", "agentops.batch_size", "agentops.accepted", "agentops.duplicates",
-    "agentops.rejected", "llm.provider", "llm.model", "llm.prompt_tokens",
+    "marg.project_id", "marg.agent_id", "marg.run_id", "marg.environment",
+    "marg.run_status", "marg.batch_size", "marg.accepted", "marg.duplicates",
+    "marg.rejected", "llm.provider", "llm.model", "llm.prompt_tokens",
     "llm.completion_tokens", "llm.total_tokens", "tool.name", "tool.type", "error.type",
 }
 FORBIDDEN_FRAGMENTS = ("prompt\"", "response", "tool.input", "tool.output", "secret", "password")
@@ -76,8 +76,8 @@ def test_run_exports_root_and_child_spans_correlated_to_run(traced):
     # Trace/run correlation: ids on the span equal the ids stored on the run.
     assert hex_id(root.context.trace_id, 32) == run["trace_id"]
     assert hex_id(root.context.span_id, 16) == run["root_span_id"]
-    assert root.attributes["agentops.run_id"] == "run-1"
-    assert root.attributes["agentops.agent_id"] == "agent-1"
+    assert root.attributes["marg.run_id"] == "run-1"
+    assert root.attributes["marg.agent_id"] == "agent-1"
     assert root.status.status_code == StatusCode.OK
     assert (root.end_time - root.start_time) / 1e9 == pytest.approx(2.0, abs=0.01)
     assert root.parent is None
@@ -87,7 +87,7 @@ def test_run_exports_root_and_child_spans_correlated_to_run(traced):
     for child in children:
         assert hex_id(child.context.trace_id, 32) == run["trace_id"]
         assert hex_id(child.parent.span_id, 16) == run["root_span_id"]
-        assert child.attributes["agentops.run_id"] == "run-1"
+        assert child.attributes["marg.run_id"] == "run-1"
     llm = next(s for s in spans if s.name == "llm.chat")
     assert llm.attributes["llm.prompt_tokens"] == "10"
 
@@ -97,7 +97,7 @@ def test_failed_run_root_span_has_error_status(traced):
     root = next(s for s in traced.spans() if s.name == "agent.run")
     assert root.status.status_code == StatusCode.ERROR
     assert root.attributes["error.type"] == "TimeoutError"
-    assert root.attributes["agentops.run_status"] == "error"
+    assert root.attributes["marg.run_status"] == "error"
 
 
 def test_failed_llm_call_span_is_error(traced):
@@ -114,9 +114,9 @@ def test_failed_llm_call_span_is_error(traced):
 def test_ingestion_request_gets_a_live_span(traced):
     full_run(traced.tenant, "run-req")
     span = next(s for s in traced.spans() if s.name == "ingest.batch")
-    assert span.attributes["agentops.accepted"] == 4
-    assert span.attributes["agentops.batch_size"] == 4
-    assert span.attributes["agentops.project_id"] == traced.tenant.project_id
+    assert span.attributes["marg.accepted"] == 4
+    assert span.attributes["marg.batch_size"] == 4
+    assert span.attributes["marg.project_id"] == traced.tenant.project_id
 
 
 def test_out_of_order_start_still_exports_root_with_correct_ids(traced):
@@ -164,10 +164,10 @@ def test_error_traces_are_not_sampled_away(db_path):
         full_run(h.tenant, "ok-run")
         full_run(h.tenant, "bad-run", fail=True)
         spans = h.spans()
-        names = [(s.name, s.attributes.get("agentops.run_id")) for s in spans]
+        names = [(s.name, s.attributes.get("marg.run_id")) for s in spans]
         assert ("agent.run", "bad-run") in names          # error root always exported
         assert ("agent.run", "ok-run") not in names        # healthy run sampled out
-        assert h.metric("agentops_trace_spans_total", outcome="sampled_out") >= 1
+        assert h.metric("marg_trace_spans_total", outcome="sampled_out") >= 1
     finally:
         h.client.__exit__(None, None, None)
 
@@ -204,7 +204,7 @@ def test_exporter_failure_is_observable_and_never_breaks_ingestion(db_path):
             assert r.status_code == 202 and r.json()["accepted"] == 2
         h.flush()
         assert exporter.calls >= 1
-        assert h.metric("agentops_trace_export_failures_total") >= 1
+        assert h.metric("marg_trace_export_failures_total") >= 1
         assert h.client.get("/health/ready").status_code == 200
         assert h.tenant.get("/runs/r0").json()["run"]["status"] == "success"
     finally:
@@ -224,7 +224,7 @@ def test_failure_result_is_counted(db_path):
     try:
         full_run(h.tenant, "x")
         h.flush()
-        assert h.metric("agentops_trace_export_failures_total") >= 1
+        assert h.metric("marg_trace_export_failures_total") >= 1
     finally:
         h.client.__exit__(None, None, None)
 
@@ -253,7 +253,7 @@ def test_unreachable_otlp_endpoint_does_not_break_the_backend(db_path):
         text = client.get("/metrics").text
         failures = sum(
             s.value for fam in text_string_to_metric_families(text) for s in fam.samples
-            if s.name == "agentops_trace_export_failures_total"
+            if s.name == "marg_trace_export_failures_total"
         )
         assert failures >= 1
         assert t.get("/runs/u").json()["run"]["status"] == "success"
@@ -299,7 +299,7 @@ def test_spans_are_exported_over_real_otlp_http(db_path):
             req.ParseFromString(body)
             for rs in req.resource_spans:
                 res = {a.key: a.value.string_value for a in rs.resource.attributes}
-                assert res["service.name"] == "agentops-backend"
+                assert res["service.name"] == "marg-backend"
                 for ss in rs.scope_spans:
                     for sp in ss.spans:
                         found[sp.name] = sp

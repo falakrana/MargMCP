@@ -2,7 +2,7 @@
 
 ## Overview
 
-The AgentOps Monitoring Dashboard provides a single-pane-of-glass user interface for inspecting AI agent runs, telemetry, traces, and system reliability.
+The Marg Monitoring Dashboard provides a single-pane-of-glass user interface for inspecting AI agent runs, telemetry, traces, and system reliability.
 
 Following the design preference for a **minimalist whitish theme**, the UI uses a clean light palette (`#ffffff` canvas, `#f8fafc` subtle background, `#e2e8f0` crisp borders, `#0f172a` high-contrast typography, and `#4f46e5` indigo accent) with semantic status badges and accessible data visualizations.
 
@@ -87,7 +87,7 @@ Follow these steps to manually verify the Phase 6 dashboard:
 
 1. **Start the backend (if not already running):**
    ```powershell
-   .\.venv\Scripts\python -m backend.agentops_backend.main
+   .\.venv\Scripts\python -m backend.marg_backend.main
    ```
    Confirm backend is listening on `http://localhost:8000`.
 

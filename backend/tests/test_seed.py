@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from agentops_backend import config, seed
-from agentops_backend.main import create_app
+from marg_backend import config, seed
+from marg_backend.main import create_app
 from tests.conftest import make_settings
 
 

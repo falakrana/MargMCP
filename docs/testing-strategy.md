@@ -1,4 +1,4 @@
-# AgentOps MCP — Testing Strategy
+# Marg MCP — Testing Strategy
 
 ## 1. Overview
 

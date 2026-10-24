@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentops-sdk"
+name = "marg-sdk"
 version = "0.1.0"
-description = "AgentOps MCP Telemetry SDK"
+description = "Marg MCP Telemetry SDK"
 license = { text = "Apache-2.0" }
 authors = [
     {name = "Falak Rana", email = "ranafalak18@gmail.com"}
@@ -30,10 +30,10 @@ test = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["agentops_sdk*"]
+include = ["marg_sdk*"]
 
 [tool.pytest.ini_options]
-addopts = "-v --cov=agentops_sdk --cov-report=term-missing"
+addopts = "-v --cov=marg_sdk --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.ruff]

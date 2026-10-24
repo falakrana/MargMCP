@@ -1,6 +1,6 @@
-# AgentOps MCP Server (Phase 7)
+# Marg MCP Server (Phase 7)
 
-A read-only [Model Context Protocol](https://modelcontextprotocol.io) server that exposes AgentOps
+A read-only [Model Context Protocol](https://modelcontextprotocol.io) server that exposes Marg
 monitoring data to MCP-compatible clients. It is built on the official Python MCP SDK (`mcp`,
 `FastMCP`) and is a thin layer over the same query services the REST API and dashboard use
 (`queries.py`, `trace_service.py`). No database logic is duplicated.
@@ -12,25 +12,25 @@ monitoring data to MCP-compatible clients. It is built on the official Python MC
 
 ```powershell
 # stdio (default): the MCP client launches this process
-$env:AGENTOPS_MCP_API_KEY = "<read-scoped AgentOps API key>"
-python -m agentops_backend.mcp_server        # or: agentops-mcp
+$env:MARG_MCP_API_KEY = "<read-scoped Marg API key>"
+python -m marg_backend.mcp_server        # or: agentops-mcp
 
 # streamable HTTP (binds to 127.0.0.1 by default)
-python -m agentops_backend.mcp_server --transport streamable-http --port 8765
+python -m marg_backend.mcp_server --transport streamable-http --port 8765
 ```
 
-The server needs the same database settings as the backend (`AGENTOPS_DATABASE_URL` or
-`POSTGRES_*`) and the same `AGENTOPS_SECRET_KEY` (used to verify API keys).
+The server needs the same database settings as the backend (`MARG_DATABASE_URL` or
+`POSTGRES_*`) and the same `MARG_SECRET_KEY` (used to verify API keys).
 
 stdio uses stdout for the protocol, so all server logging goes to stderr.
 
 ## Authentication and authorisation
 
-* Every tool call is authenticated against the database with an AgentOps API key that has the
+* Every tool call is authenticated against the database with an Marg API key that has the
   **`read`** scope. Revoking a key takes effect on the next call.
-* **stdio:** the key comes from `AGENTOPS_MCP_API_KEY` in the server process environment.
+* **stdio:** the key comes from `MARG_MCP_API_KEY` in the server process environment.
 * **streamable-http:** the per-request `Authorization: Bearer <key>` header is used;
-  `AGENTOPS_MCP_API_KEY` is only a fallback. Do not expose this transport beyond localhost without
+  `MARG_MCP_API_KEY` is only a fallback. Do not expose this transport beyond localhost without
   TLS and a reverse proxy.
 * A key belongs to one project; the caller can only see that project. Every tool accepts an optional
   `project_id`; if it differs from the key's project the call fails with `project_access_denied`.
@@ -41,11 +41,11 @@ stdio uses stdout for the protocol, so all server logging goes to stderr.
 
 | Variable                              | Default     | Meaning                                         |
 | ------------------------------------- | ----------- | ----------------------------------------------- |
-| `AGENTOPS_MCP_API_KEY`              | _(unset)_ | Read-scoped key for stdio / fallback for HTTP   |
-| `AGENTOPS_MCP_DEFAULT_WINDOW_HOURS` | `24`      | Window used when a time range is omitted        |
-| `AGENTOPS_MCP_MAX_WINDOW_DAYS`      | `30`      | Wider windows are rejected                      |
-| `AGENTOPS_MCP_MAX_RESULTS`          | `50`      | Max rows for list-style tools (1–100)          |
-| `AGENTOPS_PAYLOAD_CAPTURE_ENABLED`  | `false`   | Run `metadata` is only returned when `true` |
+| `MARG_MCP_API_KEY`              | _(unset)_ | Read-scoped key for stdio / fallback for HTTP   |
+| `MARG_MCP_DEFAULT_WINDOW_HOURS` | `24`      | Window used when a time range is omitted        |
+| `MARG_MCP_MAX_WINDOW_DAYS`      | `30`      | Wider windows are rejected                      |
+| `MARG_MCP_MAX_RESULTS`          | `50`      | Max rows for list-style tools (1–100)          |
+| `MARG_PAYLOAD_CAPTURE_ENABLED`  | `false`   | Run `metadata` is only returned when `true` |
 
 ## Tools
 
@@ -77,7 +77,7 @@ Messages never contain stack traces, SQL, connection strings or other tenants' d
 | `project_access_denied` | `project_id` differs from the key's project                 |
 | `invalid_argument`      | Malformed ID, bad enum, page/limit out of range               |
 | `invalid_time_range`    | Unparseable timestamp, or `started_after >= started_before` |
-| `time_range_too_large`  | Window exceeds `AGENTOPS_MCP_MAX_WINDOW_DAYS`               |
+| `time_range_too_large`  | Window exceeds `MARG_MCP_MAX_WINDOW_DAYS`               |
 | `not_found`             | Run/agent does not exist **in the caller's project**    |
 | `storage_unavailable`   | Database error                                                |
 | `internal_error`        | Anything unexpected (details are logged by type only)         |
@@ -100,12 +100,12 @@ Messages never contain stack traces, SQL, connection strings or other tenants' d
 {
   "mcpServers": {
     "agentops": {
-      "command": "C:\\path\\to\\AgentOpsMCP\\.venv\\Scripts\\python.exe",
-      "args": ["-m", "agentops_backend.mcp_server"],
+      "command": "C:\\path\\to\\MargMCP\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "marg_backend.mcp_server"],
       "env": {
-        "AGENTOPS_DATABASE_URL": "postgresql+psycopg://user:password@localhost:5432/agentops",
-        "AGENTOPS_SECRET_KEY": "<same value as the backend>",
-        "AGENTOPS_MCP_API_KEY": "<read-scoped AgentOps API key>"
+        "MARG_DATABASE_URL": "postgresql+psycopg://user:password@localhost:5432/agentops",
+        "MARG_SECRET_KEY": "<same value as the backend>",
+        "MARG_MCP_API_KEY": "<read-scoped Marg API key>"
       }
     }
   }
@@ -115,7 +115,7 @@ Messages never contain stack traces, SQL, connection strings or other tenants' d
 Inspect the server interactively with the official inspector:
 
 ```powershell
-npx @modelcontextprotocol/inspector python -m agentops_backend.mcp_server
+npx @modelcontextprotocol/inspector python -m marg_backend.mcp_server
 ```
 
 ## Tests
@@ -132,7 +132,7 @@ MCP client ⇄ server smoke test over stdio:
 
 1. Create a read-scoped key and start the server (or configure your MCP client as above).
 2. List tools: expect exactly the seven tools above, all read-only.
-3. Call each tool with valid arguments against seeded data (`python -m agentops_backend.seed`).
+3. Call each tool with valid arguments against seeded data (`python -m marg_backend.seed`).
 4. Call with an invalid ID (`../x`), a reversed/huge time window and `page_size=1000`: expect
    controlled `invalid_argument` / `invalid_time_range` / `time_range_too_large` errors.
 5. Call with another project's `project_id` and with an ingest-only key: expect

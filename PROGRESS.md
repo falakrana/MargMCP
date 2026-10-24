@@ -1,12 +1,12 @@
-# AgentOps MCP — Progress Log
+# Marg MCP — Progress Log
 
 ## Project snapshot
 
-- **Project:** AgentOps MCP
-- **Current phase:** Phase 9 — Security, Reliability, and Performance Hardening
-- **Current status:** APPROVED
-- **Last human-approved phase:** Phase 9
-- **Next permitted action:** Phase 9 approved by owner on 2026-10-22. Await explicit owner instruction to begin Phase 10.
+- **Project:** Marg MCP (formerly AgentOps MCP)
+- **Current phase:** Phase 10 — Deployment, End-to-End Pilot, and Release Readiness (Option A End-to-End Migration to Marg MCP)
+- **Current status:** READY_FOR_REVIEW
+- **Last human-approved phase:** Phase 9 (Phase 10 implemented and ready for review)
+- **Next permitted action:** Await human review and approval for release.
 - **Source of detailed requirements:** `implementation.md` plus approved PRD/SRS and architecture decisions.
 
 ## Phase checklist
@@ -24,7 +24,7 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 | 7     | MCP Server and Read-Only Monitoring Tools                   | APPROVED         | Approved by owner (2026-10-19)                                             |
 | 8     | AI Diagnostic Assistant                                     | APPROVED         | Approved by owner (2026-10-19)                                             |
 | 9     | Security, Reliability, and Performance Hardening            | APPROVED         | Approved by owner (2026-10-22)                                             |
-| 10    | Deployment, End-to-End Pilot, and Release Readiness         | NOT_STARTED      | Requires explicit approval of Phase 9                                      |
+| 10    | Deployment, End-to-End Pilot, and Release Readiness         | READY_FOR_REVIEW | Complete test coverage, CI pipeline, pilot agent, and Marg MCP rename     |
 
 ## Decision and blocker register
 
@@ -780,6 +780,74 @@ Use only these statuses: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `READY_FOR_REV
 - **Status at end:** `READY_FOR_REVIEW` (Phase 10)
 - **Human approval:** Awaiting explicit human owner approval for Phase 10 release.
 - **Next permitted action:** Await PR checks completion and human owner review.
+
+### 2026-10-23 — Migration: End-to-End Renaming to Marg MCP (Option A)
+
+- **Status at start:** `READY_FOR_REVIEW` (Phase 10)
+- **Work performed:**
+  - Executed Option A (End-to-End Migration) renaming the project and all subsystems from `AgentOpsMCP` / `AgentOps` to `MargMCP` / `Marg`.
+  - Directory renaming via `git mv`:
+    - `backend/agentops_backend` -> `backend/marg_backend`
+    - `sdk/agentops_sdk` -> `sdk/marg_sdk`
+    - `infra/grafana/dashboards/agentops-overview.json` -> `infra/grafana/dashboards/marg-overview.json`
+  - Packages & Entry Points:
+    - Updated `backend/pyproject.toml` package to `marg-backend` with entrypoint script `marg-mcp = "marg_backend.mcp_server:main"`.
+    - Updated `sdk/pyproject.toml` package to `marg-sdk`.
+    - Uninstalled old packages from virtualenv and reinstalled in editable mode (`pip install -e backend`, `pip install -e sdk`).
+  - Backend Subsystems (`backend/marg_backend` & `backend/tests`):
+    - Refactored all internal and test imports to `marg_backend`.
+    - Renamed all Prometheus metrics from `agentops_*` to `marg_*` (`marg_runs_total`, `marg_run_duration_seconds`, `marg_llm_calls_total`, `marg_tool_calls_total`, `marg_events_total`, `marg_backend_info`, etc.).
+    - Updated OpenTelemetry instrumentation scope to `marg.backend` and span attributes to `marg.*` (`marg.run_id`, `marg.project_id`, etc.).
+    - FastMCP server instance initialized with name `"marg"`.
+    - FastAPI title updated to `"Marg MCP Ingestion & Query API"`.
+    - Configured Pydantic Settings in `backend/marg_backend/config.py` with multi-source dual fallback (`MARG_*` primary, `AGENTOPS_*` fallback) preserving isolated unit test fixtures.
+    - Updated `alembic.ini` and `backend/Dockerfile`.
+  - SDK (`sdk/marg_sdk` & `sdk/tests`):
+    - Core telemetry client class named `Marg` with backwards-compatibility alias `AgentOps = Marg`.
+    - Config class named `MargConfig` with alias `AgentOpsConfig = MargConfig` and dual-prefix environment variable support.
+    - Updated contextvars `marg_current_run` and `marg_current_span`.
+    - Updated exporters (`base.py`, `batch.py`, `http.py`) and decorators.
+  - Infrastructure (`infra/`):
+    - Updated `infra/docker-compose.yml` and `infra/docker-compose.prod.yml` with `MARG_*` environment variables, `MARG_METRICS_TOKEN`, and service configurations.
+    - Updated `infra/prometheus/prometheus.yml` job name `marg-backend` and bearer token path.
+    - Updated `infra/grafana/provisioning/datasources/datasources.yml` datasource name to `marg-prometheus`.
+    - Updated all PromQL queries in Grafana dashboard `infra/grafana/dashboards/marg-overview.json` to `marg_*`.
+  - Frontend UI (`frontend/`):
+    - `frontend/index.html`: updated title to `"Marg MCP Dashboard"` and meta tags.
+    - `frontend/src/components/Sidebar.tsx`: logo mark updated to `"M"`, title `"Marg MCP"`.
+    - `frontend/src/pages/LoginPage.tsx`: logo mark updated to `"M"`, branding `"Marg MCP"`.
+    - `frontend/src/pages/SettingsPage.tsx`: environment variable code snippets updated to `MARG_*`.
+    - `frontend/Dockerfile` updated.
+  - Scripts, Examples & Documentation:
+    - Updated `examples/pilot_agent.py`, `examples/simple_agent.py`, `scripts/backup_db.py`.
+    - Updated `README.md`, `backend/README.md`, `sdk/README.md`, `LICENSE`, `.env.example`, and all files under `docs/`.
+- **Files modified/renamed:**
+  - `backend/marg_backend/*` (all backend modules)
+  - `backend/tests/*` (all 15 backend test suites)
+  - `sdk/marg_sdk/*` (all SDK modules)
+  - `sdk/tests/*` (all SDK test suites)
+  - `infra/*` (docker compose, prometheus, grafana)
+  - `frontend/*` (html, components, pages)
+  - `docs/*`, `examples/*`, `scripts/*`, `README.md`, `.env.example`
+  - `IMPLEMENTATION_STATUS.md`
+  - `PROGRESS.md`
+- **Commands run and actual results:**
+  - `pytest backend/tests` — PASS (306 passed in 55.15s, 0 failures).
+  - `pytest sdk/tests` — PASS (9 passed in 0.82s, 86% coverage, 0 failures).
+  - `npm run test` (in `frontend/`) — PASS (20 passed in 951ms, 0 failures).
+  - `npm run build` (in `frontend/`) — PASS (TypeScript build succeeded, `dist/` created in 717ms).
+  - `git status --short` — PASS (Clean working tree, all renames and edits tracked).
+- **Tests added/updated:** Updated test assertions across `backend/tests` and `sdk/tests` for `marg_*` metrics, `marg.*` span attributes, and `marg_sdk` package namespace.
+- **Acceptance criteria evidence:**
+  - 100% of test suites passing across Backend (306/306), SDK (9/9), and Frontend (20/20).
+  - Frontend production build succeeds cleanly.
+  - Zero remaining references to old package names `agentops_backend` or `agentops_sdk`.
+  - Dual compatibility maintained for legacy `AGENTOPS_*` environment variables.
+- **Decisions/assumptions:** Prioritized `MARG_*` configuration while retaining backward compatibility fallback for `AGENTOPS_*` to avoid breaking existing deployments.
+- **Blockers/known limitations:** None.
+- **Status at end:** `READY_FOR_REVIEW` (Phase 10)
+- **Human approval:** User explicitly directed: "Option A. End to end migration. Do it."
+- **Next permitted action:** Human review of Option A migration and release sign-off.
 
 ## Append-only session entry template
 

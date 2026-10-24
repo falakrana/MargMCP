@@ -1,4 +1,4 @@
-# AgentOps MCP — Assumptions and Decisions Register
+# Marg MCP — Assumptions and Decisions Register
 
 > Record every material assumption and decision with date, rationale, alternatives considered, and impact. Mark status as `PROVISIONAL`, `DECIDED`, or `SUPERSEDED`.
 

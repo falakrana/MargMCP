@@ -6,8 +6,8 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import create_engine
 
-from agentops_backend.config import Settings
-from agentops_backend.models import Base
+from marg_backend.config import Settings
+from marg_backend.models import Base
 
 config = context.config
 if config.config_file_name is not None:

@@ -1,4 +1,4 @@
-# AgentOps MCP — Telemetry Schema (v1)
+# Marg MCP — Telemetry Schema (v1)
 
 This document defines the canonical telemetry model shared by the SDK, adapters, ingestion API, and storage layers.
 
@@ -189,15 +189,15 @@ Exposed at `GET /metrics` (Prometheus scrape).
 
 | Metric | Type | Labels | Description |
 |---|---|---|---|
-| `agentops_runs_total` | Counter | `agent_id`, `environment`, `status` | Total runs by status |
-| `agentops_run_duration_seconds` | Histogram | `agent_id`, `environment` | Run duration distribution |
-| `agentops_llm_calls_total` | Counter | `agent_id`, `provider`, `model`, `status` | LLM call count |
-| `agentops_llm_call_duration_seconds` | Histogram | `agent_id`, `provider`, `model` | LLM call latency |
-| `agentops_tool_calls_total` | Counter | `agent_id`, `tool_name`, `status` | Tool call count |
-| `agentops_tool_call_duration_seconds` | Histogram | `agent_id`, `tool_name` | Tool call latency |
-| `agentops_tokens_total` | Counter | `agent_id`, `provider`, `model`, `token_type` | Token usage (prompt/completion) |
-| `agentops_ingestion_requests_total` | Counter | `status`, `endpoint` | Ingestion API request count |
-| `agentops_ingestion_latency_seconds` | Histogram | `endpoint` | Ingestion API latency |
+| `marg_runs_total` | Counter | `agent_id`, `environment`, `status` | Total runs by status |
+| `marg_run_duration_seconds` | Histogram | `agent_id`, `environment` | Run duration distribution |
+| `marg_llm_calls_total` | Counter | `agent_id`, `provider`, `model`, `status` | LLM call count |
+| `marg_llm_call_duration_seconds` | Histogram | `agent_id`, `provider`, `model` | LLM call latency |
+| `marg_tool_calls_total` | Counter | `agent_id`, `tool_name`, `status` | Tool call count |
+| `marg_tool_call_duration_seconds` | Histogram | `agent_id`, `tool_name` | Tool call latency |
+| `marg_tokens_total` | Counter | `agent_id`, `provider`, `model`, `token_type` | Token usage (prompt/completion) |
+| `marg_ingestion_requests_total` | Counter | `status`, `endpoint` | Ingestion API request count |
+| `marg_ingestion_latency_seconds` | Histogram | `endpoint` | Ingestion API latency |
 
 **Label cardinality rules:**
 - `agent_id`: bounded by registered agents (low hundreds max)

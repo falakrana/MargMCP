@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from agentops_backend.metrics import Metrics
+from marg_backend.metrics import Metrics
 
 INFRA = Path(__file__).resolve().parents[2] / "infra"
 
@@ -61,22 +61,24 @@ def test_backend_does_not_depend_on_trace_backend(compose):
 
 def test_backend_exports_to_tempo_otlp_http(compose):
     env = compose["services"]["backend"]["environment"]
-    assert "tempo:4318/v1/traces" in env["AGENTOPS_OTLP_ENDPOINT"]
+    otlp = env.get("MARG_OTLP_ENDPOINT") or env.get("AGENTOPS_OTLP_ENDPOINT", "")
+    assert "tempo:4318/v1/traces" in otlp
 
 
 def test_prometheus_scrapes_backend_with_token_file():
     cfg = load_yaml("prometheus", "prometheus.yml")
-    job = next(j for j in cfg["scrape_configs"] if j["job_name"] == "agentops-backend")
+    job = next(j for j in cfg["scrape_configs"] if j["job_name"] in ("marg-backend", "agentops-backend"))
     assert job["metrics_path"] == "/metrics"
     assert any(t in ("backend:8000", "host.docker.internal:8000") for t in job["static_configs"][0]["targets"])
     auth = job["authorization"]
     assert auth["type"] == "Bearer" and "credentials_file" in auth
+    assert any(token in auth["credentials_file"] for token in ("/tmp/marg_metrics_token", "/tmp/agentops_metrics_token"))
     assert "credentials" not in auth  # never an inline secret
 
 
 def test_prometheus_command_wires_token_file_and_retention(compose):
     cmd = " ".join(compose["services"]["prometheus"]["command"])
-    assert "/tmp/agentops_metrics_token" in cmd
+    assert any(token in cmd for token in ("/tmp/marg_metrics_token", "/tmp/agentops_metrics_token"))
     assert "retention.time=30d" in cmd
 
 
@@ -95,8 +97,11 @@ def test_grafana_datasources_and_dashboard_provider():
 
 
 def _dashboard():
-    return json.loads((INFRA / "grafana" / "dashboards" / "agentops-overview.json")
-                      .read_text(encoding="utf-8"))
+    for name in ("marg-overview.json", "agentops-overview.json"):
+        p = INFRA / "grafana" / "dashboards" / name
+        if p.exists():
+            return json.loads(p.read_text(encoding="utf-8"))
+    raise FileNotFoundError("Dashboard file not found in infra/grafana/dashboards/")
 
 
 def test_dashboard_uses_provisioned_datasource_uids():
@@ -116,8 +121,8 @@ def test_dashboard_queries_reference_only_real_metrics():
     referenced: set[str] = set()
     for panel in _dashboard()["panels"]:
         for target in panel["targets"]:
-            referenced |= set(re.findall(r"agentops_[a-z_]+", target["expr"]))
-    assert referenced, "dashboard should query AgentOps metrics"
+            referenced |= set(re.findall(r"(?:marg|agentops)_[a-z_]+", target["expr"]))
+    assert referenced, "dashboard should query metrics"
     assert referenced <= known, f"unknown metrics: {referenced - known}"
 
 

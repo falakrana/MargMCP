@@ -11,8 +11,8 @@ from datetime import timedelta
 import pytest
 from sqlalchemy.exc import OperationalError
 
-from agentops_backend.mcp_server import DIAGNOSTIC_TOOL_NAMES, TOOL_NAMES, build_server
-from agentops_backend.mcp_tools import MonitoringTools, ToolError
+from marg_backend.mcp_server import DIAGNOSTIC_TOOL_NAMES, TOOL_NAMES, build_server
+from marg_backend.mcp_tools import MonitoringTools, ToolError
 
 from .conftest import SECRET, Tenant, full_run, make_event, now
 
@@ -154,8 +154,8 @@ class TestAuth:
         assert tools.get_error_summary(other.read_key)["total_runs"] == 0
 
     def test_revoked_key_stops_working(self, tools, client, seeded):
-        from agentops_backend.models import ApiKey
-        from agentops_backend.auth import _parse_prefix
+        from marg_backend.models import ApiKey
+        from marg_backend.auth import _parse_prefix
         from sqlalchemy import select
         from datetime import datetime, timezone
 
@@ -325,7 +325,7 @@ class TestReadOnlySurface:
 
     def test_tool_calls_do_not_modify_data(self, client, tools, seeded):
         from sqlalchemy import func, select
-        from agentops_backend.models import Event, Run
+        from marg_backend.models import Event, Run
 
         def counts():
             with client.app.state.session_factory() as s:
@@ -355,7 +355,7 @@ class TestMcpProtocolSmoke:
             "AGENTOPS_MCP_API_KEY": seeded.read_key,
         }
         params = StdioServerParameters(
-            command=sys.executable, args=["-m", "agentops_backend.mcp_server"],
+            command=sys.executable, args=["-m", "marg_backend.mcp_server"],
             env=env, cwd=str(tmp_path),  # keeps a developer's real .env out of the test
         )
 
@@ -399,7 +399,7 @@ class TestMcpProtocolSmoke:
             AGENTOPS_SECRET_KEY=SECRET, AGENTOPS_ENV="development",
         )
         params = StdioServerParameters(
-            command=sys.executable, args=["-m", "agentops_backend.mcp_server"],
+            command=sys.executable, args=["-m", "marg_backend.mcp_server"],
             env=env, cwd=str(tmp_path),
         )
 

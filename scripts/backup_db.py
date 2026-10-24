@@ -25,18 +25,18 @@ from urllib.parse import urlparse
 
 
 def _get_database_url() -> str:
-    url = os.environ.get("AGENTOPS_DATABASE_URL")
+    url = os.environ.get("MARG_DATABASE_URL") or os.environ.get("AGENTOPS_DATABASE_URL")
     if url:
         return url
     pg_host = os.environ.get("POSTGRES_HOST")
     if pg_host:
-        user = os.environ.get("POSTGRES_USER", "agentops")
+        user = os.environ.get("POSTGRES_USER", "marg")
         pw = os.environ.get("POSTGRES_PASSWORD", "")
-        db = os.environ.get("POSTGRES_DB", "agentops")
+        db = os.environ.get("POSTGRES_DB", "marg")
         port = os.environ.get("POSTGRES_PORT", "5432")
         return f"postgresql://{user}:{pw}@{pg_host}:{port}/{db}"
     # Default fallback
-    return "sqlite:///agentops.db"
+    return "sqlite:///marg.db"
 
 
 def _is_sqlite(url: str) -> bool:

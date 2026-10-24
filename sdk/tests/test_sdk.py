@@ -1,7 +1,7 @@
 import pytest
 import responses
-from agentops_sdk import AgentOps, AgentOpsConfig
-from agentops_sdk.context import get_current_run
+from marg_sdk import Marg, MargConfig, AgentOps, AgentOpsConfig
+from marg_sdk.context import get_current_run
 
 @pytest.fixture
 def mock_agentops():

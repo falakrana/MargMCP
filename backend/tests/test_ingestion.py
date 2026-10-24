@@ -116,7 +116,7 @@ def test_max_batch_accepted(tenant):
 def test_payload_size_limit(client, db_path):
     from fastapi.testclient import TestClient
 
-    from agentops_backend.main import create_app
+    from marg_backend.main import create_app
     from tests.conftest import Tenant, make_settings
 
     app = create_app(make_settings(db_path.with_name("small.db"), max_payload_bytes=2048))
@@ -336,7 +336,7 @@ def test_agent_is_auto_registered(tenant):
 def test_unregistered_agent_rejected_when_auto_register_off(db_path):
     from fastapi.testclient import TestClient
 
-    from agentops_backend.main import create_app
+    from marg_backend.main import create_app
     from tests.conftest import Tenant, admin_headers, make_settings
 
     app = create_app(make_settings(db_path.with_name("strict.db"), auto_register_agents=False))

@@ -67,11 +67,11 @@ def test_method_not_allowed_uses_envelope(client):
 def test_sdk_wire_payload_is_accepted(tenant):
     """Feed the real Phase 2 SDK models through the ingestion API."""
     sdk_src = Path(__file__).resolve().parents[2] / "sdk"
-    if not (sdk_src / "agentops_sdk").exists():
+    if not (sdk_src / "marg_sdk").exists():
         pytest.skip("SDK sources not present")
     sys.path.insert(0, str(sdk_src))
     try:
-        from agentops_sdk.events import EventBatchPayload, TelemetryEvent
+        from marg_sdk.events import EventBatchPayload, TelemetryEvent
     except Exception as exc:  # pragma: no cover
         pytest.skip(f"SDK not importable: {exc}")
     finally:

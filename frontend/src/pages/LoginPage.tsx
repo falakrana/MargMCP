@@ -52,10 +52,10 @@ export function LoginPage() {
             fontWeight: 700,
             marginBottom: 16,
           }}>
-            A
+            M
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
-            AgentOps MCP
+            Marg MCP
           </h1>
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 4 }}>
             Sign in to your monitoring dashboard

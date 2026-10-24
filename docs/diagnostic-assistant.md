@@ -47,7 +47,7 @@ missing baselines are reported under `unknown`.
 | Read-only | No write/exec code in the package (static test); DB counts unchanged; only 7 read tools used |
 | No remediation claims | Statements like "I restarted…" / "has been rolled back" are removed (`meta.blocked_action_claims`) |
 | Prompt-injection resistant | Escaped, delimited data block; system prompt declares data untrusted |
-| Privacy | Payload summaries/raw events never fetched; run metadata only if `AGENTOPS_PAYLOAD_CAPTURE_ENABLED=true`; API keys never in prompt/report |
+| Privacy | Payload summaries/raw events never fetched; run metadata only if `MARG_PAYLOAD_CAPTURE_ENABLED=true`; API keys never in prompt/report |
 | Tenant isolation | Foreign project/run → 403/404 *before* any model call |
 | Bounded | tool-call budget, context chars, spans, max tokens, timeout, ≤`max_retries` retries |
 | Safe logging | Logs only scope kind, outcome, counts, duration — never question, evidence, or model text |
@@ -145,7 +145,7 @@ ever uses the seven Phase 7 read tools – it is never given the diagnose tools.
 ## Manual verification checklist
 
 1. Set in `.env`: `DIAGNOSTIC_LLM_PROVIDER`, `DIAGNOSTIC_LLM_MODEL`, `DIAGNOSTIC_LLM_API_KEY` (real) and restart the backend.
-2. Seed demo data (`python -m agentops_backend.seed`) or use your own runs; create a read key.
+2. Seed demo data (`python -m marg_backend.seed`) or use your own runs; create a read key.
 3. **Failed run:** `POST …/diagnose/run {"run_id":"<failed run>"}` – findings state the error type with a `run:` citation; explanations are labelled hypotheses with confidence.
 4. **Slow run:** diagnose a slow run – the slowest span is cited and `pct_of_run` appears in the evidence summary.
 5. **No telemetry:** `POST …/diagnose/agent` for a window with no runs – `llm_skipped: true`, nothing invented.

@@ -1,6 +1,6 @@
 # Local development stack: backend + PostgreSQL + Prometheus + Tempo + Grafana.
-# Required env (see ../.env.example): POSTGRES_PASSWORD, AGENTOPS_SECRET_KEY,
-# AGENTOPS_ADMIN_TOKEN, AGENTOPS_METRICS_TOKEN, GRAFANA_ADMIN_PASSWORD
+# Required env (see ../.env.example): POSTGRES_PASSWORD, MARG_SECRET_KEY,
+# MARG_ADMIN_TOKEN, MARG_METRICS_TOKEN, GRAFANA_ADMIN_PASSWORD
 # See ../docs/observability.md for ports, data flow and troubleshooting.
 # NOTE: observability services are for local development (no TLS, local disk).
 services:
@@ -9,15 +9,15 @@ services:
   # postgres:
   #   image: postgres:16
   #   environment:
-  #     POSTGRES_DB: ${POSTGRES_DB:-agentops}
-  #     POSTGRES_USER: ${POSTGRES_USER:-agentops}
+  #     POSTGRES_DB: ${POSTGRES_DB:-marg}
+  #     POSTGRES_USER: ${POSTGRES_USER:-marg}
   #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
   #   ports:
   #     - "5432:5432"
   #   volumes:
   #     - pgdata:/var/lib/postgresql/data
   #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agentops} -d ${POSTGRES_DB:-agentops}"]
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marg} -d ${POSTGRES_DB:-marg}"]
   #     interval: 5s
   #     timeout: 3s
   #     retries: 10
@@ -27,16 +27,16 @@ services:
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
-      POSTGRES_DB: ${POSTGRES_DB:-agentops}
-      POSTGRES_USER: ${POSTGRES_USER:-agentops}
+      POSTGRES_DB: ${POSTGRES_DB:-marg}
+      POSTGRES_USER: ${POSTGRES_USER:-marg}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-      AGENTOPS_ENV: ${AGENTOPS_ENV:-development}
-      AGENTOPS_SECRET_KEY: ${AGENTOPS_SECRET_KEY:?set AGENTOPS_SECRET_KEY in .env}
-      AGENTOPS_ADMIN_TOKEN: ${AGENTOPS_ADMIN_TOKEN:?set AGENTOPS_ADMIN_TOKEN in .env}
-      AGENTOPS_METRICS_TOKEN: ${AGENTOPS_METRICS_TOKEN:?set AGENTOPS_METRICS_TOKEN in .env}
+      MARG_ENV: ${MARG_ENV:-${AGENTOPS_ENV:-development}}
+      MARG_SECRET_KEY: ${MARG_SECRET_KEY:-${AGENTOPS_SECRET_KEY:?set MARG_SECRET_KEY in .env}}
+      MARG_ADMIN_TOKEN: ${MARG_ADMIN_TOKEN:-${AGENTOPS_ADMIN_TOKEN:?set MARG_ADMIN_TOKEN in .env}}
+      MARG_METRICS_TOKEN: ${MARG_METRICS_TOKEN:-${AGENTOPS_METRICS_TOKEN:?set MARG_METRICS_TOKEN in .env}}
       # Trace export is best-effort: the backend does NOT depend on Tempo being up.
-      AGENTOPS_OTLP_ENDPOINT: ${AGENTOPS_OTLP_ENDPOINT:-http://tempo:4318/v1/traces}
-      AGENTOPS_TRACE_SAMPLE_RATIO: ${AGENTOPS_TRACE_SAMPLE_RATIO:-1.0}
+      MARG_OTLP_ENDPOINT: ${MARG_OTLP_ENDPOINT:-${AGENTOPS_OTLP_ENDPOINT:-http://tempo:4318/v1/traces}}
+      MARG_TRACE_SAMPLE_RATIO: ${MARG_TRACE_SAMPLE_RATIO:-${AGENTOPS_TRACE_SAMPLE_RATIO:-1.0}}
     ports:
       - "8000:8000"
     # depends_on:
@@ -49,13 +49,13 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >
-        printf '%s' "$$AGENTOPS_METRICS_TOKEN" > /tmp/agentops_metrics_token &&
+        printf '%s' "$$MARG_METRICS_TOKEN" > /tmp/marg_metrics_token &&
         exec /bin/prometheus
         --config.file=/etc/prometheus/prometheus.yml
         --storage.tsdb.path=/prometheus
         --storage.tsdb.retention.time=30d
     environment:
-      AGENTOPS_METRICS_TOKEN: ${AGENTOPS_METRICS_TOKEN:?set AGENTOPS_METRICS_TOKEN in .env}
+      MARG_METRICS_TOKEN: ${MARG_METRICS_TOKEN:-${AGENTOPS_METRICS_TOKEN:?set MARG_METRICS_TOKEN in .env}}
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - promdata:/prometheus

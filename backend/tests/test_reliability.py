@@ -5,10 +5,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import OperationalError
 
-from agentops_backend import ingestion
-from agentops_backend.config import Settings
-from agentops_backend.main import create_app
-from agentops_backend.models import Base
+from marg_backend import ingestion
+from marg_backend.config import Settings
+from marg_backend.main import create_app
+from marg_backend.models import Base
 from tests.conftest import Tenant, full_run, make_event, make_settings
 
 
@@ -37,7 +37,7 @@ def test_database_error_during_ingestion_rolls_back_whole_batch(client, tenant, 
 def test_database_unreachable_returns_structured_503(db_path, tenant, client):
     # Point the live app at an engine that cannot open its database.
     broken = create_engine("sqlite:////nonexistent-dir-xyz/none.db")
-    from agentops_backend.db import make_session_factory
+    from marg_backend.db import make_session_factory
 
     client.app.state.session_factory = make_session_factory(broken)
     r = client.get(f"/v1/projects/{tenant.project_id}/runs",
@@ -48,7 +48,7 @@ def test_database_unreachable_returns_structured_503(db_path, tenant, client):
 
 
 def test_query_database_error_is_503(client, tenant, monkeypatch):
-    from agentops_backend import queries
+    from marg_backend import queries
 
     def boom(*a, **k):
         raise OperationalError("SELECT", {}, Exception("secret dsn"))
@@ -59,7 +59,7 @@ def test_query_database_error_is_503(client, tenant, monkeypatch):
 
 
 def test_unexpected_error_hides_internals(client, tenant, monkeypatch):
-    from agentops_backend import queries
+    from marg_backend import queries
 
     monkeypatch.setattr(queries, "get_project", lambda *a, **k: 1 / 0)
     r = tenant.get("")
@@ -95,7 +95,7 @@ def test_health_does_not_require_auth_and_leaks_nothing(client):
 
 
 def test_readiness_503_when_db_down_without_details(client):
-    from agentops_backend.db import make_session_factory
+    from marg_backend.db import make_session_factory
 
     client.app.state.session_factory = make_session_factory(
         create_engine("sqlite:////nonexistent-dir-xyz/none.db")

@@ -1,6 +1,6 @@
-# AgentOps MCP — Operational Runbook
+# Marg MCP — Operational Runbook
 
-This runbook provides step-by-step operational instructions for starting, maintaining, troubleshooting, backing up, and recovering AgentOps MCP in development, staging, and production environments.
+This runbook provides step-by-step operational instructions for starting, maintaining, troubleshooting, backing up, and recovering Marg MCP in development, staging, and production environments.
 
 ---
 
@@ -90,18 +90,18 @@ curl -f http://localhost:8000/readyz
 Scrapes system and telemetry metrics (requires configured Bearer token):
 
 ```bash
-curl -H "Authorization: Bearer <AGENTOPS_METRICS_TOKEN>" http://localhost:8000/metrics
+curl -H "Authorization: Bearer <MARG_METRICS_TOKEN>" http://localhost:8000/metrics
 
 # Expected Response:
-# # HELP agentops_ingestion_events_total ...
-# agentops_ingestion_events_total{status="accepted"} 124.0
+# # HELP marg_ingestion_events_total ...
+# marg_ingestion_events_total{status="accepted"} 124.0
 ```
 
 ---
 
 ## 4. Database Migrations & Schema Management
 
-AgentOps uses Alembic for declarative schema migrations.
+Marg uses Alembic for declarative schema migrations.
 
 ### Applying Pending Migrations
 
@@ -132,7 +132,7 @@ alembic downgrade -1
 
 ## 5. Backup, Verification, & Restore
 
-AgentOps includes an automated backup utility in `scripts/backup_db.py`.
+Marg includes an automated backup utility in `scripts/backup_db.py`.
 
 ### Automated Backup Creation
 
@@ -141,24 +141,24 @@ AgentOps includes an automated backup utility in `scripts/backup_db.py`.
 python scripts/backup_db.py backup --output-dir ./backups
 
 # Output:
-# [SUCCESS] Database backup created: ./backups/agentops_backup_20261022_100000.db
+# [SUCCESS] Database backup created: ./backups/marg_backup_20261022_100000.db
 # [VERIFIED] Backup integrity confirmed.
 ```
 
 ### Verifying a Backup File
 
 ```bash
-python scripts/backup_db.py verify --input-file ./backups/agentops_backup_20261022_100000.db
+python scripts/backup_db.py verify --input-file ./backups/marg_backup_20261022_100000.db
 ```
 
 ### Restoring from Backup
 
 ```bash
 # For SQLite:
-python scripts/backup_db.py restore --input-file ./backups/agentops_backup_20261022_100000.db --force
+python scripts/backup_db.py restore --input-file ./backups/marg_backup_20261022_100000.db --force
 
 # For PostgreSQL:
-pg_restore -h <host> -U <user> -d agentops -c -v ./backups/agentops_pg_backup_20261022_100000.dump
+pg_restore -h <host> -U <user> -d agentops -c -v ./backups/marg_pg_backup_20261022_100000.dump
 ```
 
 ---
@@ -167,21 +167,21 @@ pg_restore -h <host> -U <user> -d agentops -c -v ./backups/agentops_pg_backup_20
 
 Telemetry data is subject to configurable retention periods:
 
-- `AGENTOPS_RUN_RETENTION_DAYS` (default: 90 days)
-- `AGENTOPS_TRACE_RETENTION_DAYS` (default: 30 days)
+- `MARG_RUN_RETENTION_DAYS` (default: 90 days)
+- `MARG_TRACE_RETENTION_DAYS` (default: 30 days)
 
 ### Running Retention Purge (Dry Run)
 
 Inspect which runs and events would be pruned without deleting anything:
 
 ```bash
-python -m agentops_backend.retention --dry-run
+python -m marg_backend.retention --dry-run
 ```
 
 ### Executing Live Retention Purge
 
 ```bash
-python -m agentops_backend.retention --apply
+python -m marg_backend.retention --apply
 ```
 
 ---
@@ -201,21 +201,21 @@ python -m agentops_backend.retention --apply
 ### Playbook 2: Ingestion Returns HTTP 429 `rate_limit_exceeded`
 
 - **Symptom:** Monitored agents report 429 errors during high-volume event export.
-- **Root Cause:** Ingestion rate limit exceeded (`AGENTOPS_RATE_LIMIT_INGEST_PER_MIN`, default: 1200 req/min).
+- **Root Cause:** Ingestion rate limit exceeded (`MARG_RATE_LIMIT_INGEST_PER_MIN`, default: 1200 req/min).
 - **Triage Steps:**
   1. The SDK automatically respects `Retry-After` headers and absorbs drops safely without crashing agents.
   2. If legitimate traffic is being throttled, increase the limit in `.env`:
      ```env
-     AGENTOPS_RATE_LIMIT_INGEST_PER_MIN=3000
+     MARG_RATE_LIMIT_INGEST_PER_MIN=3000
      ```
   3. Reload backend configuration.
 
 ### Playbook 3: Ingestion Returns HTTP 413 `payload_too_large`
 
 - **Symptom:** SDK batch export fails with HTTP 413.
-- **Root Cause:** Event batch size exceeds `AGENTOPS_MAX_PAYLOAD_BYTES` (default: 5MB).
+- **Root Cause:** Event batch size exceeds `MARG_MAX_PAYLOAD_BYTES` (default: 5MB).
 - **Triage Steps:**
-  1. In SDK configuration, reduce `batch_size` (e.g. from 100 to 50) in `agentops_sdk/config.py`.
+  1. In SDK configuration, reduce `batch_size` (e.g. from 100 to 50) in `marg_sdk/config.py`.
   2. Verify agents are not capturing large binary payloads or prompts (payload capture should remain off).
 
 ### Playbook 4: Tempo Trace Backend Unreachable

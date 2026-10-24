@@ -1,1 +1,1 @@
-# Test package for agentops_backend.
+# Test package for marg_backend.

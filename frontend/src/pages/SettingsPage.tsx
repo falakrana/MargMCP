@@ -110,9 +110,9 @@ export function SettingsPage() {
               color: 'var(--text-secondary)',
               overflowX: 'auto',
             }}>
-{`AGENTOPS_API_ENDPOINT=http://localhost:8000
-AGENTOPS_PROJECT_ID=${projectId}
-AGENTOPS_API_KEY=<your-api-key>`}
+{`MARG_API_ENDPOINT=http://localhost:8000
+MARG_PROJECT_ID=${projectId}
+MARG_API_KEY=<your-api-key>`}
             </pre>
           </div>
         </div>
@@ -127,14 +127,14 @@ AGENTOPS_API_KEY=<your-api-key>`}
           <div className="card-body">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
               <p>
-                <strong style={{ color: 'var(--text-primary)' }}>Payload capture</strong> is controlled by <code style={{ fontFamily: 'JetBrains Mono, monospace', background: 'var(--bg-muted)', padding: '1px 4px', borderRadius: 3 }}>AGENTOPS_PAYLOAD_CAPTURE_ENABLED</code> on the server.
+                <strong style={{ color: 'var(--text-primary)' }}>Payload capture</strong> is controlled by <code style={{ fontFamily: 'JetBrains Mono, monospace', background: 'var(--bg-muted)', padding: '1px 4px', borderRadius: 3 }}>MARG_PAYLOAD_CAPTURE_ENABLED</code> on the server.
                 When disabled (default), prompt and output content is not included in timeline responses.
               </p>
               <p>
-                <strong style={{ color: 'var(--text-primary)' }}>Run records</strong> are retained for <code style={{ fontFamily: 'JetBrains Mono, monospace', background: 'var(--bg-muted)', padding: '1px 4px', borderRadius: 3 }}>AGENTOPS_RUN_RETENTION_DAYS</code> days (default: 90).
+                <strong style={{ color: 'var(--text-primary)' }}>Run records</strong> are retained for <code style={{ fontFamily: 'JetBrains Mono, monospace', background: 'var(--bg-muted)', padding: '1px 4px', borderRadius: 3 }}>MARG_RUN_RETENTION_DAYS</code> days (default: 90).
               </p>
               <p>
-                <strong style={{ color: 'var(--text-primary)' }}>OTLP trace data</strong> retention is controlled by the trace backend (Tempo) and configured via <code style={{ fontFamily: 'JetBrains Mono, monospace', background: 'var(--bg-muted)', padding: '1px 4px', borderRadius: 3 }}>AGENTOPS_TRACE_RETENTION_DAYS</code>.
+                <strong style={{ color: 'var(--text-primary)' }}>OTLP trace data</strong> retention is controlled by the trace backend (Tempo) and configured via <code style={{ fontFamily: 'JetBrains Mono, monospace', background: 'var(--bg-muted)', padding: '1px 4px', borderRadius: 3 }}>MARG_TRACE_RETENTION_DAYS</code>.
               </p>
             </div>
           </div>

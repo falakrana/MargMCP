@@ -1,12 +1,12 @@
-# AgentOps SDK — Integration Guide
+# Marg SDK — Integration Guide
 
-A practical, step-by-step developer guide on integrating AgentOps MCP observability into any Python AI Agent, LangChain workflow, or RAG application.
+A practical, step-by-step developer guide on integrating Marg MCP observability into any Python AI Agent, LangChain workflow, or RAG application.
 
 ---
 
 ## 1. Quick Overview
 
-The AgentOps SDK is designed with a **gradual adoption model**:
+The Marg SDK is designed with a **gradual adoption model**:
 - **Level 1 (Zero-Code-Change Decorator):** Add 2 lines above your agent function. Automatically captures execution time, success/failure, stack traces, and environment.
 - **Level 2 (Context Manager):** Wrap multi-step tasks or pipelines with `with agentops.start_run():`.
 - **Level 3 (Fine-Grained Spans for RAG / Tools):** Track individual tool executions (e.g., Vector DB retrieval) and LLM token usage for waterfall visualization in the dashboard.
@@ -18,20 +18,20 @@ The AgentOps SDK is designed with a **gradual adoption model**:
 ### Step 1: Install the SDK
 In your agent's virtual environment:
 ```bash
-pip install agentops-sdk
+pip install marg-sdk
 # Or link directly from the local repository during development:
-pip install -e /path/to/AgentOpsMCP/sdk
+pip install -e /path/to/MargMCP/sdk
 ```
 
 ### Step 2: Configure Environment Variables
 Add these variables to your project's `.env` file:
 ```env
-AGENTOPS_ENDPOINT=http://localhost:8000
-AGENTOPS_PROJECT_ID=my-project-id
-AGENTOPS_API_KEY=aop_xxxxxxxx_xxxxxxxxxxxxxxxxxxxxxxxx
+MARG_ENDPOINT=http://localhost:8000
+MARG_PROJECT_ID=my-project-id
+MARG_API_KEY=aop_xxxxxxxx_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-> **Note on Projects:** Each AI application should use its own dedicated `AGENTOPS_PROJECT_ID` (e.g., `ragnition`, `support-bot`, `sales-agent`) so that telemetry, token costs, and errors are cleanly segregated in the dashboard.
+> **Note on Projects:** Each AI application should use its own dedicated `MARG_PROJECT_ID` (e.g., `ragnition`, `support-bot`, `sales-agent`) so that telemetry, token costs, and errors are cleanly segregated in the dashboard.
 
 ---
 
@@ -42,11 +42,11 @@ AGENTOPS_API_KEY=aop_xxxxxxxx_xxxxxxxxxxxxxxxxxxxxxxxx
 If you have an agent function, script, or endpoint, you do **not** need to touch any internal logic. Just add the `@observe_agent` decorator:
 
 ```python
-from agentops_sdk import AgentOps
-from agentops_sdk.adapters.decorator import observe_agent
+from marg_sdk import Marg
+from marg_sdk.adapters.decorator import observe_agent
 
 # Initialize the client from environment variables (.env)
-agentops = AgentOps.from_env()
+agentops = Marg.from_env()
 
 @observe_agent(agentops, agent_id="document-analysis-agent")
 def run_agent(user_query: str):
@@ -68,9 +68,9 @@ def run_agent(user_query: str):
 Ideal for classes, scripts, or async pipelines where you want explicit control over when a run starts and ends:
 
 ```python
-from agentops_sdk import AgentOps
+from marg_sdk import Marg
 
-agentops = AgentOps.from_env()
+agentops = Marg.from_env()
 
 def handle_user_request(request_data):
     with agentops.start_run(agent_id="customer-support-agent") as run:
@@ -95,9 +95,9 @@ Use this pattern when you want the dashboard's **Waterfall Span Tree** to show s
 
 ```python
 import time
-from agentops_sdk import AgentOps
+from marg_sdk import Marg
 
-agentops = AgentOps.from_env()
+agentops = Marg.from_env()
 
 async def run_rag_pipeline(document_id: str, query: str):
     # 1. Start the agent run
@@ -142,13 +142,13 @@ async def run_rag_pipeline(document_id: str, query: str):
    - Wrap the SDK initialization in a `try...except` so your service starts smoothly even if observability is temporarily disabled:
      ```python
      try:
-         from agentops_sdk import AgentOps
-         agentops = AgentOps.from_env()
+         from marg_sdk import Marg
+         agentops = Marg.from_env()
      except Exception:
          agentops = None
      ```
 3. **Privacy by Default:**
-   - Sensitive user prompts, raw completions, and secret tool arguments are redacted by default unless payload capture is explicitly enabled via `AGENTOPS_CAPTURE_PAYLOADS=true`.
+   - Sensitive user prompts, raw completions, and secret tool arguments are redacted by default unless payload capture is explicitly enabled via `MARG_CAPTURE_PAYLOADS=true`.
    - Never log authorization headers or private API tokens into event payloads.
 
 ---
@@ -157,6 +157,6 @@ async def run_rag_pipeline(document_id: str, query: str):
 
 | Issue | Cause | Fix |
 |---|---|---|
-| **`HTTP 404` when connecting dashboard** | Port collision (e.g. host application ran on port `8000`). | Run AgentOps backend on `8000` and your AI agent app on another port (e.g., `8001`). |
-| **`ModuleNotFoundError: No module named 'agentops_sdk'`** | Running with system Python instead of the activated virtual environment. | Start your server using the virtual environment interpreter (e.g. `.\.venv\Scripts\python`). |
+| **`HTTP 404` when connecting dashboard** | Port collision (e.g. host application ran on port `8000`). | Run Marg backend on `8000` and your AI agent app on another port (e.g., `8001`). |
+| **`ModuleNotFoundError: No module named 'marg_sdk'`** | Running with system Python instead of the activated virtual environment. | Start your server using the virtual environment interpreter (e.g. `.\.venv\Scripts\python`). |
 | **Runs not appearing on dashboard** | Background worker hasn't flushed yet, or process exited immediately. | The SDK flushes batches every 2 seconds. In one-off CLI scripts, call `agentops.shutdown()` before exit to flush the queue. |

@@ -1,9 +1,9 @@
-# AgentOps MCP — Threat Model & Security Architecture Review
+# Marg MCP — Threat Model & Security Architecture Review
 
 ## 1. Executive Summary & Purpose
 
-This threat model review analyzes the security posture of the **AgentOps MCP** observability platform following the Phase 9 hardening initiatives. AgentOps is designed to instrument, monitor, and diagnose autonomous AI agents in production environments. Because observability platforms inherently collect system telemetry and operate alongside critical business agents, AgentOps must guarantee:
-1. **Zero Monitored Agent Disruption:** A failure, network partition, or degradation in AgentOps must never crash or block business operations.
+This threat model review analyzes the security posture of the **Marg MCP** observability platform following the Phase 9 hardening initiatives. Marg is designed to instrument, monitor, and diagnose autonomous AI agents in production environments. Because observability platforms inherently collect system telemetry and operate alongside critical business agents, Marg must guarantee:
+1. **Zero Monitored Agent Disruption:** A failure, network partition, or degradation in Marg must never crash or block business operations.
 2. **Strict Multi-Tenant Scoping:** Telemetry, API keys, and diagnostic insights must never cross project boundaries.
 3. **Defense Against Secret Leakage:** Prompts, system logs, error messages, metric labels, and LLM diagnostic contexts must never leak sensitive tokens, credentials, or customer PII.
 4. **Denial-of-Service Resilience:** Request streams, payload sizes, query windows, pagination offsets, and metric label cardinalities must be strictly bounded.
@@ -12,7 +12,7 @@ This threat model review analyzes the security posture of the **AgentOps MCP** o
 
 ## 2. System Architecture & Trust Boundaries
 
-AgentOps MCP comprises seven primary trust zones separated by explicit security boundaries:
+Marg MCP comprises seven primary trust zones separated by explicit security boundaries:
 
 ```
 +---------------------------------------------------------------------------------------+
@@ -22,7 +22,7 @@ AgentOps MCP comprises seven primary trust zones separated by explicit security 
                      │                                      │
                      ▼ (OTLP / HTTP Ingest + TLS)           ▼ (REST / SSE + Auth)
 +────────────────────────────────────────+  +───────────────────────────────────────────+
-| ZONE 2: AgentOps Ingestion & REST API  |  | ZONE 3: Diagnostic Assistant & MCP Server |
+| ZONE 2: Marg Ingestion & REST API  |  | ZONE 3: Diagnostic Assistant & MCP Server |
 | - Rate Limiter (IP & Project Token)    |  | - Read-only tool boundary                 |
 | - BodyLimitMiddleware (413 Stream Cap) |  | - Untrusted telemetry prompt sandbox      |
 | - Secret Scrubbing & Redaction Engine  |  | - Static code read-only guarantee         |
@@ -64,7 +64,7 @@ AgentOps MCP comprises seven primary trust zones separated by explicit security 
 | **API Key Brute Force** | High-velocity guessing of ingest/read keys. | Token rate limiting via `RateLimiter` (default 600 RPM, burst 100). Hashed token lookups (`HMAC-SHA256`). Minimum token length enforcement (`MIN_TOKEN_LENGTH = 24`). | Mitigated |
 | **Surrogate / Timing Side-Channel** | Comparing auth tokens via standard string comparison or malformed Unicode surrogate sequences triggering crashes. | Constant-time byte-level comparison `safe_equals` utilizing UTF-8 byte encoding with `surrogatepass` error handling. | Mitigated |
 | **Stale Key Compromise** | Compromised credentials persist indefinitely. | Key rotation API (`POST /v1/projects/{id}/api-keys/rotate`) with atomic dual-key grace periods and explicit revocation (`/revoke`). | Mitigated |
-| **Token Homogeneity** | Identical tokens used for Admin, Metrics, and Ingest permissions. | Enforced distinction: `AGENTOPS_SECRET_KEY`, `AGENTOPS_ADMIN_TOKEN`, and `AGENTOPS_METRICS_TOKEN` must be distinct in production. | Mitigated |
+| **Token Homogeneity** | Identical tokens used for Admin, Metrics, and Ingest permissions. | Enforced distinction: `MARG_SECRET_KEY`, `MARG_ADMIN_TOKEN`, and `MARG_METRICS_TOKEN` must be distinct in production. | Mitigated |
 
 ### 3.2 Tampering (Data Integrity)
 
@@ -87,9 +87,9 @@ AgentOps MCP comprises seven primary trust zones separated by explicit security 
 |---|---|---|---|
 | **Credential Leakage in Logs** | Database connection URLs, Bearer tokens, or API keys written to stdout/syslog. | Custom `JsonFormatter` coupled with `scrub_text` sanitizing URLs with passwords (`postgres://user:pass@host`), JWTs, Bearer tokens, `aop_`, `sk-`, and `gsk-` keys. | Mitigated |
 | **Metric Label Cardinality Leakage** | Raw prompts, user IDs, or exception strings embedded in Prometheus labels. | Strict whitelist of metric labels; `SeriesCap` class limiting unique label combinations to 1000 per family and grouping excess series into `"other"`. | Mitigated |
-| **Prompts in Traces & Storage** | Customer prompts stored by default in traces or database events. | `AGENTOPS_PAYLOAD_CAPTURE_ENABLED=false` by default. SDK and Backend recursive scrubbing removes sensitive fields even when capture is enabled. | Mitigated |
+| **Prompts in Traces & Storage** | Customer prompts stored by default in traces or database events. | `MARG_PAYLOAD_CAPTURE_ENABLED=false` by default. SDK and Backend recursive scrubbing removes sensitive fields even when capture is enabled. | Mitigated |
 | **Diagnostic Assistant Exfiltration** | An attacker embeds instructions in an agent error to trick the diagnostic LLM into exfiltrating secrets. | Prompt isolation sandboxing (delimited data fences), untrusted data warnings, strict read-only tool verification, and stripping of unrecognized citations. | Mitigated |
-| **API Docs Discovery** | Unauthorized users map endpoints via Swagger / OpenAPI UI. | `AGENTOPS_ENABLE_DOCS=false` default in production; `/docs` and `/redoc` disabled. | Mitigated |
+| **API Docs Discovery** | Unauthorized users map endpoints via Swagger / OpenAPI UI. | `MARG_ENABLE_DOCS=false` default in production; `/docs` and `/redoc` disabled. | Mitigated |
 
 ### 3.5 Denial of Service (Availability)
 
@@ -98,7 +98,7 @@ AgentOps MCP comprises seven primary trust zones separated by explicit security 
 | **Oversized Request Flooding** | Adversary streams gigabyte payloads to exhaust backend memory. | `BodyLimitMiddleware` intercepts streaming chunks and rejects any request exceeding `max_payload_bytes` immediately with HTTP 413. | Mitigated |
 | **Database Pool Starvation** | Slow queries or client connection leaks exhaust PostgreSQL pool. | Configured connection pooling (`db_pool_size`, `max_overflow`, `pool_recycle`), connection timeout (10s), and statement timeout (`db_statement_timeout_ms = 15000`). | Mitigated |
 | **Deep Pagination / Query Exhaustion** | Heavy queries requesting `limit=1000000` or `offset=9999999` locking table scans. | Hard caps on `offset <= 10000` (`max_page_offset`) and mandatory time window restrictions (`rest_max_window_days = 90`). | Mitigated |
-| **SDK Exporter Backpressure Crash** | Agent crashes if AgentOps backend is offline or slow. | SDK `AsyncBatchProcessor` bounded in-memory queue; non-blocking enqueue; drops overflow safely (`dropped_events_count`); all network errors swallowed. | Mitigated |
+| **SDK Exporter Backpressure Crash** | Agent crashes if Marg backend is offline or slow. | SDK `AsyncBatchProcessor` bounded in-memory queue; non-blocking enqueue; drops overflow safely (`dropped_events_count`); all network errors swallowed. | Mitigated |
 | **Retry Storms** | Exponential SDK retries synchronizing and hammering a recovering backend. | Bounded exponential backoff (`max_retries = 3`) with randomized jitter; strict adherence to `Retry-After` headers on HTTP 429; fail-fast on 4xx errors. | Mitigated |
 
 ### 3.6 Elevation of Privilege (Authorization)

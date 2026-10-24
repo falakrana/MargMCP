@@ -4,10 +4,10 @@ import pytest
 import responses
 import requests
 
-from agentops_sdk import AgentOps, AgentOpsConfig
-from agentops_sdk.events import TelemetryEvent
-from agentops_sdk.exporters.http import HttpExporter
-from agentops_sdk.redaction import redact_sensitive_data
+from marg_sdk import Marg, MargConfig, AgentOps, AgentOpsConfig
+from marg_sdk.events import TelemetryEvent
+from marg_sdk.exporters.http import HttpExporter
+from marg_sdk.redaction import redact_sensitive_data
 
 
 def test_http_exporter_retries_transient_503_and_succeeds():
