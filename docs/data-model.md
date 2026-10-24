@@ -33,7 +33,7 @@ Run record additions/deviations from the Phase 1 schema document:
 | `ix_events_project_run_ts` | `(project_id, run_id, timestamp)` | Fetch one run's events in order |
 | `uq_api_keys_prefix` | `(key_prefix)` unique | API‑key lookup during authentication |
 
-Primary keys cover run/event/agent point lookups. Indexes were chosen from the query patterns in `backend/agentops_backend/queries.py`; no speculative indexes were added. `EXPLAIN` analysis on PostgreSQL with realistic volumes is deferred to Phase 9 (performance hardening).
+Primary keys cover run/event/agent point lookups. Indexes were chosen from the query patterns in `backend/marg_backend/queries.py`; no speculative indexes were added. `EXPLAIN` analysis on PostgreSQL with realistic volumes is deferred to Phase 9 (performance hardening).
 
 ## Retention
 

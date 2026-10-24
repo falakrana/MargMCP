@@ -128,7 +128,7 @@ def test_project_api_key_cannot_use_admin(tenant):
 def test_admin_disabled_when_token_unset(db_path):
     from fastapi.testclient import TestClient
 
-    from agentops_backend.main import create_app
+    from marg_backend.main import create_app
     from tests.conftest import make_settings
 
     app = create_app(make_settings(db_path.with_name("noadmin.db"), admin_token=None))

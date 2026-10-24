@@ -8,8 +8,8 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import text
 
-from agentops_backend.metrics import Metrics, SeriesCap
-from agentops_backend.observability import EventObservation, Observability
+from marg_backend.metrics import Metrics, SeriesCap
+from marg_backend.observability import EventObservation, Observability
 from tests.conftest import full_run, make_event, now
 
 

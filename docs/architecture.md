@@ -1,8 +1,8 @@
-# AgentOps MCP — Architecture
+# Marg MCP — Architecture
 
 ## 1. System Overview
 
-AgentOps MCP is an observability and diagnostic platform for AI agents. It collects telemetry from instrumented agents, stores it as metrics / traces / run history, exposes it through a dashboard and MCP interface, and provides an AI diagnostic assistant for evidence-based failure investigation.
+Marg MCP is an observability and diagnostic platform for AI agents. It collects telemetry from instrumented agents, stores it as metrics / traces / run history, exposes it through a dashboard and MCP interface, and provides an AI diagnostic assistant for evidence-based failure investigation.
 
 ## 2. High-Level Architecture
 
@@ -12,7 +12,7 @@ AgentOps MCP is an observability and diagnostic platform for AI agents. It colle
 │  (Python applications using LLMs, tools, retrieval, …)  │
 └───────────────┬──────────────────────┬───────────────────┘
                 │                      │
-        AgentOps SDK           Framework Adapters
+        Marg SDK           Framework Adapters
         (direct code)          (decorators/callbacks)
                 │                      │
                 └──────────┬───────────┘
@@ -42,7 +42,7 @@ AgentOps MCP is an observability and diagnostic platform for AI agents. It colle
               ┌──────┘          └──────┐
               ▼                        ▼
      ┌──────────────┐         ┌────────────────┐
-     │   Dashboard  │         │ AgentOps MCP   │
+     │   Dashboard  │         │ Marg MCP   │
      │ (React + TS) │         │ Server         │
      │ + Grafana    │         │ (read-only     │
      │              │         │  tools)        │
@@ -59,11 +59,11 @@ AgentOps MCP is an observability and diagnostic platform for AI agents. It colle
 
 ## 3. Component Responsibilities
 
-### 3.1 AgentOps SDK (`sdk/`)
+### 3.1 Marg SDK (`sdk/`)
 
 | Concern | Detail |
 |---|---|
-| Initialization | `AgentOps.from_env()` or explicit config |
+| Initialization | `Marg.from_env()` or explicit config |
 | Run lifecycle | `start_run → record events → set_output_summary → end_run` |
 | Context propagation | Thread-local / contextvars for trace/run IDs |
 | Exporter abstraction | Pluggable — default HTTP exporter to Ingestion API |
@@ -73,7 +73,7 @@ AgentOps MCP is an observability and diagnostic platform for AI agents. It colle
 
 ### 3.2 Framework Adapters (`sdk/adapters/`)
 
-Translate framework-specific lifecycle events (e.g., LangChain callbacks) into the canonical AgentOps telemetry schema. Share the same exporter and batching infrastructure as the SDK.
+Translate framework-specific lifecycle events (e.g., LangChain callbacks) into the canonical Marg telemetry schema. Share the same exporter and batching infrastructure as the SDK.
 
 ### 3.3 Ingestion API (`backend/`)
 
@@ -93,10 +93,10 @@ Translate framework-specific lifecycle events (e.g., LangChain callbacks) into t
 ### 3.5 Prometheus — Metrics Store
 
 - Scraped from the backend `/metrics` endpoint
-- Counters: `agentops_runs_total{status, agent, env}`
-- Histograms: `agentops_run_duration_seconds{agent, env}`
-- Histograms: `agentops_llm_call_duration_seconds{provider, model}`
-- Counters: `agentops_ingestion_requests_total{status}`
+- Counters: `marg_runs_total{status, agent, env}`
+- Histograms: `marg_run_duration_seconds{agent, env}`
+- Histograms: `marg_llm_call_duration_seconds{provider, model}`
+- Counters: `marg_ingestion_requests_total{status}`
 - **No** high-cardinality labels (no run_id, user_id, prompts)
 
 ### 3.6 Tempo — Trace Store
@@ -113,7 +113,7 @@ Translate framework-specific lifecycle events (e.g., LangChain callbacks) into t
 - Pages: Overview, Agents, Run History, Run Detail / Trace Explorer, Errors, Settings
 - Embeds Grafana panels for operational metrics or links to standalone Grafana
 
-### 3.8 AgentOps MCP Server (`mcp_server/`)
+### 3.8 Marg MCP Server (`mcp_server/`)
 
 - Thin Python MCP server using the maintained MCP SDK
 - Read-only tools calling the shared Query/Service layer
@@ -189,11 +189,11 @@ Translate framework-specific lifecycle events (e.g., LangChain callbacks) into t
 ## 7. Proposed Repository Structure
 
 ```
-AgentOpsMCP/
+MargMCP/
 ├── sdk/                          # Python SDK package
-│   ├── agentops_sdk/
+│   ├── marg_sdk/
 │   │   ├── __init__.py
-│   │   ├── client.py             # AgentOps main client
+│   │   ├── client.py             # Marg main client
 │   │   ├── config.py             # SDK configuration
 │   │   ├── context.py            # Run/trace context propagation
 │   │   ├── events.py             # Event/span models
@@ -205,7 +205,7 @@ AgentOpsMCP/
 │   └── README.md
 │
 ├── backend/                      # FastAPI ingestion + query service
-│   ├── agentops_backend/
+│   ├── marg_backend/
 │   │   ├── __init__.py
 │   │   ├── main.py               # FastAPI app factory
 │   │   ├── config.py             # Backend configuration
@@ -223,7 +223,7 @@ AgentOpsMCP/
 │   └── README.md
 │
 ├── mcp_server/                   # MCP server (read-only tools)
-│   ├── agentops_mcp/
+│   ├── marg_mcp/
 │   │   ├── __init__.py
 │   │   ├── server.py             # MCP server setup
 │   │   ├── tools/                # Individual tool implementations
@@ -234,7 +234,7 @@ AgentOpsMCP/
 │   └── README.md
 │
 ├── assistant/                    # AI Diagnostic Assistant
-│   ├── agentops_assistant/
+│   ├── marg_assistant/
 │   │   ├── __init__.py
 │   │   ├── investigator.py       # Investigation workflow
 │   │   ├── prompts.py            # System prompts + response format

@@ -20,15 +20,15 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from fastapi.testclient import TestClient
 
-from agentops_backend.assistant import DiagnosticEngine
-from agentops_backend.assistant.prompts import EVIDENCE_CLOSE, EVIDENCE_OPEN
-from agentops_backend.mcp_server import TOOL_NAMES
-from agentops_backend.mcp_tools import MonitoringTools
-from agentops_backend.models import Run
-from agentops_backend.schemas import IngestResult
-from agentops_sdk import AgentOps, AgentOpsConfig
-from agentops_sdk.events import TelemetryEvent
-from agentops_sdk.exporters.http import HttpExporter
+from marg_backend.assistant import DiagnosticEngine
+from marg_backend.assistant.prompts import EVIDENCE_CLOSE, EVIDENCE_OPEN
+from marg_backend.mcp_server import TOOL_NAMES
+from marg_backend.mcp_tools import MonitoringTools
+from marg_backend.models import Run
+from marg_backend.schemas import IngestResult
+from marg_sdk import AgentOps, AgentOpsConfig
+from marg_sdk.events import TelemetryEvent
+from marg_sdk.exporters.http import HttpExporter
 
 
 class ScriptedProvider:
@@ -181,7 +181,7 @@ class TestPilotEndToEndPipeline:
             headers={"Authorization": f"Bearer {client.app.state.settings.metrics_token}"},
         )
         assert metrics_res.status_code == 200
-        assert "agentops_events_total" in metrics_res.text
+        assert "marg_events_total" in metrics_res.text
 
         # 4. Trace Timeline: Inspect joined timeline and parent-child span hierarchy
         timeline_res = tenant.get(f"/runs/{run_id}/timeline")

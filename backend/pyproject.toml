@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentops-backend"
+name = "marg-backend"
 version = "0.3.0"
-description = "AgentOps MCP ingestion and query API"
+description = "Marg MCP ingestion and query API"
 license = { text = "BSL-1.1" }
 authors = [
     {name = "Falak Rana", email = "ranafalak18@gmail.com"}
@@ -28,7 +28,7 @@ dependencies = [
 ]
 
 [project.scripts]
-agentops-mcp = "agentops_backend.mcp_server:main"
+marg-mcp = "marg_backend.mcp_server:main"
 
 [project.optional-dependencies]
 dev = [
@@ -47,7 +47,7 @@ test = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["agentops_backend*"]
+include = ["marg_backend*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

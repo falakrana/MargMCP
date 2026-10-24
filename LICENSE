@@ -1,12 +1,12 @@
 ================================================================================
-AgentOpsMCP Licensing Overview
+MargMCP Licensing Overview
 ================================================================================
 
 This repository uses a dual-licensing model:
 
 1. SDK (`sdk/` directory):
    Licensed under the Apache License, Version 2.0.
-   You may freely import, use, modify, and redistribute `agentops-sdk` in any
+   You may freely import, use, modify, and redistribute `marg-sdk` in any
    application, agent, or commercial service without restriction.
    See `sdk/LICENSE` for full terms.
 
@@ -27,7 +27,7 @@ Licensor:
 Falak Rana
 
 Licensed Work:
-AgentOpsMCP (excluding the `sdk/` directory)
+MargMCP (excluding the `sdk/` directory)
 
 Additional Use Grant:
 You may use the Licensed Work for any purpose, including internal production use

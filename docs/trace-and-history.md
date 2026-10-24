@@ -97,7 +97,7 @@ Returns the full, paginated timeline for one run.
 
 Redirects (`307`) to the timeline endpoint for the run matching the given
 OpenTelemetry `trace_id`. Useful for jumping from a Tempo / Jaeger trace into
-the AgentOps run record.
+the Marg run record.
 
 **Auth:** `read` scope API key.
 
@@ -144,8 +144,8 @@ Spans are assembled **from local storage** using the following rules:
 
 ## Retention and the `trace_data_may_have_expired` Flag
 
-This service stores runs and events for `AGENTOPS_RUN_RETENTION_DAYS` (default 90).
-The OTLP backend (Tempo) keeps traces for `AGENTOPS_TRACE_RETENTION_DAYS` (default 30).
+This service stores runs and events for `MARG_RUN_RETENTION_DAYS` (default 90).
+The OTLP backend (Tempo) keeps traces for `MARG_TRACE_RETENTION_DAYS` (default 30).
 
 When `run.started_at + trace_retention_days < now`, the timeline API sets
 `trace_data_may_have_expired = true`. The local timeline is still fully served
@@ -175,7 +175,7 @@ Day 0   ────────────────────────
 
 ### Default (payload capture off)
 
-`AGENTOPS_PAYLOAD_CAPTURE_ENABLED=false` (default)
+`MARG_PAYLOAD_CAPTURE_ENABLED=false` (default)
 
 - Raw event `data` returned **without** `summary`, `output_summary`,
   `input_summary`, and `result_summary` fields.
@@ -185,7 +185,7 @@ Day 0   ────────────────────────
 
 ### Payload capture enabled
 
-`AGENTOPS_PAYLOAD_CAPTURE_ENABLED=true`
+`MARG_PAYLOAD_CAPTURE_ENABLED=true`
 
 - `summary`-type fields are **included** in raw event `data` when present.
 - This flag must be explicitly set; it is never on by default.
@@ -209,7 +209,7 @@ Every timeline response includes `correlation_links` with:
 
 ### Generating OTLP UI deep-links
 
-Set `AGENTOPS_OTLP_UI_BASE_URL=http://localhost:3000` (Grafana URL). The
+Set `MARG_OTLP_UI_BASE_URL=http://localhost:3000` (Grafana URL). The
 timeline API will populate `trace_link` with a Tempo deep-link:
 
 ```
@@ -222,10 +222,10 @@ http://localhost:3000/explore?traceId={trace_id}
 
 | Variable                          | Default          | Description                             |
 |-----------------------------------|------------------|-----------------------------------------|
-| `AGENTOPS_PAYLOAD_CAPTURE_ENABLED`| `false`          | Include payload summaries in timelines  |
-| `AGENTOPS_RUN_RETENTION_DAYS`     | `90`             | Days to keep run records                |
-| `AGENTOPS_TRACE_RETENTION_DAYS`   | `30`             | Days OTLP backend retains traces        |
-| `AGENTOPS_OTLP_UI_BASE_URL`       | *(unset)*        | Grafana base URL for trace deep-links   |
+| `MARG_PAYLOAD_CAPTURE_ENABLED`| `false`          | Include payload summaries in timelines  |
+| `MARG_RUN_RETENTION_DAYS`     | `90`             | Days to keep run records                |
+| `MARG_TRACE_RETENTION_DAYS`   | `30`             | Days OTLP backend retains traces        |
+| `MARG_OTLP_UI_BASE_URL`       | *(unset)*        | Grafana base URL for trace deep-links   |
 
 ---
 
@@ -293,7 +293,7 @@ Expected: `total_event_count` is constant; each page returns up to `event_page_s
 1. Send an event whose `data` contains a `summary` field.
 2. Fetch the timeline without changing settings.
 3. Verify `summary` is **absent** from all events in the response.
-4. Set `AGENTOPS_PAYLOAD_CAPTURE_ENABLED=true`, restart, and repeat —
+4. Set `MARG_PAYLOAD_CAPTURE_ENABLED=true`, restart, and repeat —
    now `summary` should appear.
 
 ### 7. Look up a run by trace ID

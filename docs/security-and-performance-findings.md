@@ -1,4 +1,4 @@
-# AgentOps MCP — Security and Performance Findings Report
+# Marg MCP — Security and Performance Findings Report
 
 ## 1. Executive Summary
 
@@ -17,12 +17,12 @@ The following security findings were identified, analyzed, and remediated during
 
 | ID | Category | Severity | Finding & Risk | Remediation Implemented | Evidence / Test | Status |
 |---|---|---|---|---|---|---|
-| **SEC-01** | Authentication | **HIGH** | `hmac.compare_digest` in Python raises `TypeError` when comparing non-ASCII or surrogate Unicode strings, leading to unhandled 500 crashes and timing side-channels. | Implemented `safe_equals(val1, val2)` in `agentops_backend.auth` comparing UTF-8 encoded bytes with surrogatepass encoding. | `test_safe_equals_timing_attack_resistant` | **REMEDIATED** |
-| **SEC-02** | Credential Leakage | **HIGH** | Database connection strings with embedded passwords (`postgresql://user:pass@host`) and provider API keys could leak into application logs and error traces. | Built `agentops_backend.redact` and structured `JsonFormatter` in `logging_config.py` that recursively scrub URLs with credentials, JWTs, Bearer tokens, `aop_`, `sk-`, and `gsk-` keys. | `test_json_logging_scrubs_secrets_in_message_and_extra`, `test_scrub_database_urls` | **REMEDIATED** |
+| **SEC-01** | Authentication | **HIGH** | `hmac.compare_digest` in Python raises `TypeError` when comparing non-ASCII or surrogate Unicode strings, leading to unhandled 500 crashes and timing side-channels. | Implemented `safe_equals(val1, val2)` in `marg_backend.auth` comparing UTF-8 encoded bytes with surrogatepass encoding. | `test_safe_equals_timing_attack_resistant` | **REMEDIATED** |
+| **SEC-02** | Credential Leakage | **HIGH** | Database connection strings with embedded passwords (`postgresql://user:pass@host`) and provider API keys could leak into application logs and error traces. | Built `marg_backend.redact` and structured `JsonFormatter` in `logging_config.py` that recursively scrub URLs with credentials, JWTs, Bearer tokens, `aop_`, `sk-`, and `gsk-` keys. | `test_json_logging_scrubs_secrets_in_message_and_extra`, `test_scrub_database_urls` | **REMEDIATED** |
 | **SEC-03** | Key Management | **MEDIUM** | Ingest and Read API keys lacked self-service rotation and explicit revocation workflows, risking stale key persistence upon credential compromise. | Implemented `POST /v1/projects/{id}/api-keys/rotate` (atomic generation of replacement key with graceful dual-key period) and `/revoke` endpoint. | `test_api_key_rotation_and_revocation` | **REMEDIATED** |
 | **SEC-04** | Denial of Service | **MEDIUM** | Ingestion endpoints had no request rate limiting or streaming body size limits, leaving the backend vulnerable to memory exhaustion or volumetric floods. | Added fixed-window `RateLimiter` (default 600 RPM, burst 100) per project and IP, plus `BodyLimitMiddleware` enforcing strict 413 responses for bodies exceeding `max_payload_bytes`. | `test_rate_limiter_blocks_excess_requests`, `test_body_limit_middleware_rejects_oversized_payload` | **REMEDIATED** |
 | **SEC-05** | Resource Exhaustion | **MEDIUM** | Unbounded pagination offsets (`offset=9999999`) and unrestricted historical queries (`start_time=1970`) could tie up PostgreSQL workers in full table scans. | Added `max_page_offset` limit (capped at 10,000) and `rest_max_window_days` limit (capped at 90 days). | `test_deep_pagination_offset_rejected`, `test_excessive_time_window_rejected` | **REMEDIATED** |
-| **SEC-06** | Information Leakage | **LOW** | Default Swagger / OpenAPI documentation endpoints (`/docs`, `/redoc`) exposed API schema details in production. | Configured `AGENTOPS_ENABLE_DOCS=false` by default outside development mode, shutting down interactive documentation routes. | `test_docs_disabled_in_production` | **REMEDIATED** |
+| **SEC-06** | Information Leakage | **LOW** | Default Swagger / OpenAPI documentation endpoints (`/docs`, `/redoc`) exposed API schema details in production. | Configured `MARG_ENABLE_DOCS=false` by default outside development mode, shutting down interactive documentation routes. | `test_docs_disabled_in_production` | **REMEDIATED** |
 | **SEC-07** | SDK Failures | **HIGH** | If the telemetry backend was down or returned 503/429, monitored agents could experience uncaught exceptions or unbounded retry storms. | Implemented bounded exponential backoff with full jitter in `HttpExporter`, fail-fast on 4xx client errors, strict adherence to `Retry-After`, and non-crashing exception swallowing. | `test_http_exporter_retries_transient_503_and_succeeds`, `test_http_exporter_fails_immediately_on_non_retryable_403`, `test_http_exporter_observes_retry_after_on_429` | **REMEDIATED** |
 | **SEC-08** | Client Memory Leak | **MEDIUM** | If the backend was unreachable for extended periods, the SDK in-memory event queue could grow unboundedly. | Enforced `max_queue_size` (default 1000 items) in `AsyncBatchProcessor` which safely drops oldest/newest events and increments `dropped_events_count` without crashing. | `test_sdk_queue_buffer_overflow_drops_safely` | **REMEDIATED** |
 
@@ -48,7 +48,7 @@ The following security findings were identified, analyzed, and remediated during
 
 - **Risk:** High-cardinality label values (e.g. dynamic tool names, model versions, error messages) can cause exponential combinatorial series growth in Prometheus TSDB, leading to OOM crashes.
 - **Mitigation Implemented:**
-  - Integrated `SeriesCap` wrapper into `agentops_backend.metrics` and `observability.py`.
+  - Integrated `SeriesCap` wrapper into `marg_backend.metrics` and `observability.py`.
   - Enforced a hard limit of **1,000 unique label combinations** per metric family.
   - Excess series exceeding the threshold are automatically grouped into a bounded label value (`"other"`).
 - **Test Evidence:**
@@ -69,7 +69,7 @@ The following security findings were identified, analyzed, and remediated during
 
 ### 3.4 Data Retention & Telemetry Purging
 
-- **Implementation:** `agentops_backend.retention` module and endpoints (`POST /v1/retention/purge`, `DELETE /v1/projects/{id}/telemetry`).
+- **Implementation:** `marg_backend.retention` module and endpoints (`POST /v1/retention/purge`, `DELETE /v1/projects/{id}/telemetry`).
 - **Features:**
   - Mandatory `--dry-run` default prevents accidental data loss.
   - Explicit project scoping guarantees cross-tenant isolation during purges.
@@ -101,6 +101,6 @@ The following residual risks are documented for explicit review and human owner 
 | Risk ID | Residual Risk Description | Likelihood | Impact | Current Mitigating Factor | Recommended Future Action |
 |---|---|---|---|---|---|
 | **RR-01** | **In-Memory Rate Limiting:** The Phase 9 rate limiter stores counters in-process memory. If the backend is scaled horizontally to multiple worker processes or containers, rate limits will be enforced per-node rather than cluster-wide. | Medium | Low | Rate limits are conservative (600 RPM default); adequately protects individual backend instances. | Transition to a shared Redis-backed rate limiter if multi-instance clustering is deployed. |
-| **RR-02** | **External Trace Backend Retention:** Trace spans exported to Grafana Tempo expire based on Tempo's internal retention policy (e.g. block retention in S3/local storage), independent of PostgreSQL run purge jobs. | Low | Low | API sets `trace_data_may_have_expired=True` when runs exceed `AGENTOPS_TRACE_RETENTION_DAYS`. | Align Tempo compactor retention settings with `AGENTOPS_TRACE_RETENTION_DAYS`. |
+| **RR-02** | **External Trace Backend Retention:** Trace spans exported to Grafana Tempo expire based on Tempo's internal retention policy (e.g. block retention in S3/local storage), independent of PostgreSQL run purge jobs. | Low | Low | API sets `trace_data_may_have_expired=True` when runs exceed `MARG_TRACE_RETENTION_DAYS`. | Align Tempo compactor retention settings with `MARG_TRACE_RETENTION_DAYS`. |
 | **RR-03** | **Hosted LLM Data Egress:** When using external diagnostic providers (e.g. Groq, OpenAI), sanitized run metadata and error summaries cross external API boundaries. | Low | Medium | Payloads are off by default; credentials, tokens, and database URLs are recursively scrubbed before transmission. | Deploy an on-premises Ollama/vLLM provider using `DIAGNOSTIC_LLM_PROVIDER=openai_compatible` for air-gapped environments. |
 | **RR-04** | **Host Docker CLI Absence:** The developer host lacks the Docker CLI; container integration tests are validated via Docker compose configuration linting and mock tests. | Low | Low | Unit, contract, and resilience test coverage exceeds 94% across backend and SDK. | Verify full container deployment during Phase 10 pilot. |

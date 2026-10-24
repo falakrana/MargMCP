@@ -31,23 +31,23 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      AGENTOPS_ENV: production
-      AGENTOPS_DATABASE_URL: ${AGENTOPS_DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-agentops}}
-      AGENTOPS_SECRET_KEY: ${AGENTOPS_SECRET_KEY:?Set AGENTOPS_SECRET_KEY in .env}
-      AGENTOPS_ADMIN_TOKEN: ${AGENTOPS_ADMIN_TOKEN:?Set AGENTOPS_ADMIN_TOKEN in .env}
-      AGENTOPS_METRICS_TOKEN: ${AGENTOPS_METRICS_TOKEN:?Set AGENTOPS_METRICS_TOKEN in .env}
-      AGENTOPS_OTLP_ENDPOINT: ${AGENTOPS_OTLP_ENDPOINT:-http://tempo:4318/v1/traces}
-      AGENTOPS_TRACE_SAMPLE_RATIO: ${AGENTOPS_TRACE_SAMPLE_RATIO:-1.0}
-      AGENTOPS_LOG_LEVEL: ${AGENTOPS_LOG_LEVEL:-INFO}
-      AGENTOPS_LOG_FORMAT: ${AGENTOPS_LOG_FORMAT:-json}
-      AGENTOPS_RUN_RETENTION_DAYS: ${AGENTOPS_RUN_RETENTION_DAYS:-90}
-      AGENTOPS_TRACE_RETENTION_DAYS: ${AGENTOPS_TRACE_RETENTION_DAYS:-30}
+      MARG_ENV: production
+      MARG_DATABASE_URL: ${MARG_DATABASE_URL:-${AGENTOPS_DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-marg}}}
+      MARG_SECRET_KEY: ${MARG_SECRET_KEY:-${AGENTOPS_SECRET_KEY:?Set MARG_SECRET_KEY in .env}}
+      MARG_ADMIN_TOKEN: ${MARG_ADMIN_TOKEN:-${AGENTOPS_ADMIN_TOKEN:?Set MARG_ADMIN_TOKEN in .env}}
+      MARG_METRICS_TOKEN: ${MARG_METRICS_TOKEN:-${AGENTOPS_METRICS_TOKEN:?Set MARG_METRICS_TOKEN in .env}}
+      MARG_OTLP_ENDPOINT: ${MARG_OTLP_ENDPOINT:-${AGENTOPS_OTLP_ENDPOINT:-http://tempo:4318/v1/traces}}
+      MARG_TRACE_SAMPLE_RATIO: ${MARG_TRACE_SAMPLE_RATIO:-${AGENTOPS_TRACE_SAMPLE_RATIO:-1.0}}
+      MARG_LOG_LEVEL: ${MARG_LOG_LEVEL:-${AGENTOPS_LOG_LEVEL:-INFO}}
+      MARG_LOG_FORMAT: ${MARG_LOG_FORMAT:-${AGENTOPS_LOG_FORMAT:-json}}
+      MARG_RUN_RETENTION_DAYS: ${MARG_RUN_RETENTION_DAYS:-${AGENTOPS_RUN_RETENTION_DAYS:-90}}
+      MARG_TRACE_RETENTION_DAYS: ${MARG_TRACE_RETENTION_DAYS:-${AGENTOPS_TRACE_RETENTION_DAYS:-30}}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-4}
       LLM_PROVIDER: ${LLM_PROVIDER:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-}
     networks:
-      - agentops_network
+      - marg_network
     expose:
       - "8000"
     healthcheck:
@@ -63,9 +63,9 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "${AGENTOPS_HTTP_PORT:-80}:80"
+      - "${MARG_HTTP_PORT:-${AGENTOPS_HTTP_PORT:-80}}:80"
     networks:
-      - agentops_network
+      - marg_network
     depends_on:
       backend:
         condition: service_healthy
@@ -81,18 +81,18 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >
-        printf '%s' "$$AGENTOPS_METRICS_TOKEN" > /tmp/agentops_metrics_token &&
+        printf '%s' "$$MARG_METRICS_TOKEN" > /tmp/marg_metrics_token &&
         exec /bin/prometheus
         --config.file=/etc/prometheus/prometheus.yml
         --storage.tsdb.path=/prometheus
         --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}
     environment:
-      AGENTOPS_METRICS_TOKEN: ${AGENTOPS_METRICS_TOKEN:?Set AGENTOPS_METRICS_TOKEN in .env}
+      MARG_METRICS_TOKEN: ${MARG_METRICS_TOKEN:-${AGENTOPS_METRICS_TOKEN:?Set MARG_METRICS_TOKEN in .env}}
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - promdata:/prometheus
     networks:
-      - agentops_network
+      - marg_network
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     depends_on:
@@ -107,7 +107,7 @@ services:
       - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
       - tempodata:/var/tempo
     networks:
-      - agentops_network
+      - marg_network
     ports:
       - "3200:3200"   # Tempo HTTP API
       - "4317:4317"   # OTLP gRPC
@@ -125,7 +125,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafanadata:/var/lib/grafana
     networks:
-      - agentops_network
+      - marg_network
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     depends_on:
@@ -139,5 +139,5 @@ volumes:
   grafanadata:
 
 networks:
-  agentops_network:
+  marg_network:
     driver: bridge

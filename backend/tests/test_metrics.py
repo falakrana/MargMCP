@@ -8,9 +8,9 @@ import pytest
 from fastapi.testclient import TestClient
 from prometheus_client.parser import text_string_to_metric_families
 
-from agentops_backend.main import create_app
-from agentops_backend.metrics import BoundedLabel, Metrics
-from agentops_backend.observability import Observability
+from marg_backend.main import create_app
+from marg_backend.metrics import BoundedLabel, Metrics
+from marg_backend.observability import Observability
 from tests.conftest import Tenant, bearer, full_run, make_event, make_settings, now
 
 METRICS_TOKEN = "metrics-secret-token-for-tests"
@@ -47,17 +47,17 @@ def test_expected_metric_names_and_types():
     types = {}
     for family in metrics.registry.collect():
         types[family.name] = family.type
-    assert types["agentops_runs"] == "counter"
-    assert types["agentops_run_duration_seconds"] == "histogram"
-    assert types["agentops_llm_calls"] == "counter"
-    assert types["agentops_llm_call_duration_seconds"] == "histogram"
-    assert types["agentops_tool_calls"] == "counter"
-    assert types["agentops_tool_call_duration_seconds"] == "histogram"
-    assert types["agentops_tokens"] == "counter"
-    assert types["agentops_ingestion_requests"] == "counter"
-    assert types["agentops_ingestion_latency_seconds"] == "histogram"
-    assert types["agentops_events"] == "counter"
-    assert types["agentops_trace_export_failures"] == "counter"
+    assert types["marg_runs"] == "counter"
+    assert types["marg_run_duration_seconds"] == "histogram"
+    assert types["marg_llm_calls"] == "counter"
+    assert types["marg_llm_call_duration_seconds"] == "histogram"
+    assert types["marg_tool_calls"] == "counter"
+    assert types["marg_tool_call_duration_seconds"] == "histogram"
+    assert types["marg_tokens"] == "counter"
+    assert types["marg_ingestion_requests"] == "counter"
+    assert types["marg_ingestion_latency_seconds"] == "histogram"
+    assert types["marg_events"] == "counter"
+    assert types["marg_trace_export_failures"] == "counter"
 
 
 def test_all_metric_label_names_are_bounded_and_private():
@@ -83,25 +83,25 @@ def test_bounded_label_sanitises_and_caps_cardinality():
 # ------------------------------ lifecycle --------------------------------- #
 def test_counters_reflect_a_successful_run(client, tenant):
     full_run(tenant, "run-ok", duration=2)
-    assert sample(client, "agentops_runs_total", agent_id="agent-1",
+    assert sample(client, "marg_runs_total", agent_id="agent-1",
                   environment="production", status="success") == 1
-    assert sample(client, "agentops_run_duration_seconds_count", agent_id="agent-1") == 1
-    assert sample(client, "agentops_run_duration_seconds_sum", agent_id="agent-1") == pytest.approx(2.0)
-    assert sample(client, "agentops_llm_calls_total", status="ok") == 1
-    assert sample(client, "agentops_tool_calls_total", status="ok") == 1
-    assert sample(client, "agentops_tokens_total", token_type="prompt") == 10
-    assert sample(client, "agentops_tokens_total", token_type="completion") == 5
-    assert sample(client, "agentops_events_total", outcome="accepted") == 4
-    assert sample(client, "agentops_ingestion_requests_total", status="202",
+    assert sample(client, "marg_run_duration_seconds_count", agent_id="agent-1") == 1
+    assert sample(client, "marg_run_duration_seconds_sum", agent_id="agent-1") == pytest.approx(2.0)
+    assert sample(client, "marg_llm_calls_total", status="ok") == 1
+    assert sample(client, "marg_tool_calls_total", status="ok") == 1
+    assert sample(client, "marg_tokens_total", token_type="prompt") == 10
+    assert sample(client, "marg_tokens_total", token_type="completion") == 5
+    assert sample(client, "marg_events_total", outcome="accepted") == 4
+    assert sample(client, "marg_ingestion_requests_total", status="202",
                   endpoint="/v1/telemetry/events") == 1
-    assert sample(client, "agentops_ingestion_latency_seconds_count",
+    assert sample(client, "marg_ingestion_latency_seconds_count",
                   endpoint="/v1/telemetry/events") == 1
 
 
 def test_failed_run_counts_as_error(client, tenant):
     full_run(tenant, "run-bad", fail=True)
-    assert sample(client, "agentops_runs_total", status="error") == 1
-    assert sample(client, "agentops_runs_total", status="success") == 0
+    assert sample(client, "marg_runs_total", status="error") == 1
+    assert sample(client, "marg_runs_total", status="success") == 0
 
 
 def test_llm_and_tool_failures_and_reported_durations(client, tenant):
@@ -113,15 +113,15 @@ def test_llm_and_tool_failures_and_reported_durations(client, tenant):
         make_event("r", "run_failed", data={"error_type": "ToolError"}),
     ]
     assert tenant.send(events).status_code == 202
-    assert sample(client, "agentops_llm_calls_total", provider="openai",
+    assert sample(client, "marg_llm_calls_total", provider="openai",
                   model="gpt-4o", status="error") == 1
-    assert sample(client, "agentops_llm_call_duration_seconds_sum",
+    assert sample(client, "marg_llm_call_duration_seconds_sum",
                   provider="openai") == pytest.approx(1.5)
-    assert sample(client, "agentops_tool_calls_total", tool_name="search", status="error") == 1
-    assert sample(client, "agentops_tool_call_duration_seconds_sum",
+    assert sample(client, "marg_tool_calls_total", tool_name="search", status="error") == 1
+    assert sample(client, "marg_tool_call_duration_seconds_sum",
                   tool_name="search") == pytest.approx(0.25)
     # failed LLM calls do not add tokens
-    assert sample(client, "agentops_tokens_total") == 0
+    assert sample(client, "marg_tokens_total") == 0
 
 
 def test_duplicate_retries_do_not_double_count(client, tenant):
@@ -132,19 +132,19 @@ def test_duplicate_retries_do_not_double_count(client, tenant):
     ]
     assert tenant.send(events).json()["accepted"] == 3
     assert tenant.send(events).json()["duplicates"] == 3
-    assert sample(client, "agentops_runs_total") == 1
-    assert sample(client, "agentops_tokens_total", token_type="prompt") == 7
-    assert sample(client, "agentops_events_total", outcome="accepted") == 3
-    assert sample(client, "agentops_events_total", outcome="duplicate") == 3
-    assert sample(client, "agentops_run_duration_seconds_count") == 1
+    assert sample(client, "marg_runs_total") == 1
+    assert sample(client, "marg_tokens_total", token_type="prompt") == 7
+    assert sample(client, "marg_events_total", outcome="accepted") == 3
+    assert sample(client, "marg_events_total", outcome="duplicate") == 3
+    assert sample(client, "marg_run_duration_seconds_count") == 1
 
 
 def test_rejected_events_are_counted_by_code(client, tenant):
     bad = make_event("rej", "run_started", data={"prompt": "secret user text"})
     r = tenant.send([bad])
     assert r.json()["rejected"][0]["code"] == "forbidden_attribute"
-    assert sample(client, "agentops_events_total", outcome="rejected") == 1
-    assert sample(client, "agentops_events_rejected_total", code="forbidden_attribute") == 1
+    assert sample(client, "marg_events_total", outcome="rejected") == 1
+    assert sample(client, "marg_events_rejected_total", code="forbidden_attribute") == 1
     assert "secret user text" not in scrape(client)
 
 
@@ -154,25 +154,25 @@ def test_repeat_of_same_terminal_status_is_not_a_new_run_result(client, tenant):
                  make_event("t", "run_completed", start + timedelta(seconds=1))])
     again = tenant.send([make_event("t", "run_completed", start + timedelta(seconds=1))])
     assert again.json()["accepted"] == 1  # new event id, accepted but a no-op
-    assert sample(client, "agentops_runs_total", status="success") == 1
-    assert sample(client, "agentops_run_duration_seconds_count") == 1
+    assert sample(client, "marg_runs_total", status="success") == 1
+    assert sample(client, "marg_run_duration_seconds_count") == 1
 
 
 def test_out_of_order_terminal_before_start_counts_once(client, tenant):
     start = now() - timedelta(minutes=1)
     tenant.send([make_event("ooo", "run_completed", start + timedelta(seconds=2))])
-    assert sample(client, "agentops_runs_total", status="success") == 1
-    assert sample(client, "agentops_run_duration_seconds_count") == 0  # start unknown yet
+    assert sample(client, "marg_runs_total", status="success") == 1
+    assert sample(client, "marg_run_duration_seconds_count") == 0  # start unknown yet
     tenant.send([make_event("ooo", "run_started", start)])
-    assert sample(client, "agentops_runs_total", status="success") == 1
-    assert sample(client, "agentops_run_duration_seconds_count") == 1
-    assert sample(client, "agentops_run_duration_seconds_sum") == pytest.approx(2.0)
+    assert sample(client, "marg_runs_total", status="success") == 1
+    assert sample(client, "marg_run_duration_seconds_count") == 1
+    assert sample(client, "marg_run_duration_seconds_sum") == pytest.approx(2.0)
 
 
 def test_ingestion_request_metrics_cover_auth_failures(client, tenant):
     r = client.post("/v1/telemetry/events", json={}, headers=bearer("aop_deadbeef_nope"))
     assert r.status_code == 401
-    assert sample(client, "agentops_ingestion_requests_total", status="401") == 1
+    assert sample(client, "marg_ingestion_requests_total", status="401") == 1
 
 
 # ------------------------- cardinality & privacy -------------------------- #
@@ -187,7 +187,7 @@ def test_model_label_cardinality_is_capped(client, tenant):
     models = set()
     for family in text_string_to_metric_families(scrape(client)):
         for s in family.samples:
-            if s.name == "agentops_llm_calls_total":
+            if s.name == "marg_llm_calls_total":
                 models.add(s.labels["model"])
     assert len(models) <= 101 and "other" in models
 
@@ -219,7 +219,7 @@ def _app(db_path, **overrides):
 
 def test_metrics_open_in_development_without_token(client):
     assert client.get("/metrics").status_code == 200
-    assert "agentops_backend_info" in scrape(client)
+    assert "marg_backend_info" in scrape(client)
 
 
 def test_metrics_require_bearer_token_when_configured(db_path):
@@ -254,4 +254,4 @@ def test_metric_recording_errors_never_break_ingestion(client, tenant, monkeypat
     r = tenant.send([make_event("iso", "run_started"), make_event("iso", "run_completed")])
     assert r.status_code == 202 and r.json()["accepted"] == 2
     assert tenant.get("/runs/iso").json()["run"]["status"] == "success"  # data still stored
-    assert sample(client, "agentops_observability_errors_total") == 2
+    assert sample(client, "marg_observability_errors_total") == 2

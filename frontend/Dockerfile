@@ -1,4 +1,4 @@
-# Multi-stage build for AgentOps MCP Dashboard
+# Multi-stage build for Marg MCP Dashboard
 FROM node:20-alpine AS builder
 
 WORKDIR /app

@@ -33,9 +33,9 @@ export function Sidebar() {
     <aside className="sidebar" role="navigation" aria-label="Main navigation">
       {/* Logo */}
       <div className="sidebar-logo">
-        <div className="sidebar-logo-mark" aria-hidden="true">A</div>
+        <div className="sidebar-logo-mark" aria-hidden="true">M</div>
         <div className="sidebar-logo-text">
-          <span className="sidebar-logo-name">AgentOps MCP</span>
+          <span className="sidebar-logo-name">Marg MCP</span>
           <span className="sidebar-logo-sub">Dashboard</span>
         </div>
       </div>

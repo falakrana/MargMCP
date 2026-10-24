@@ -32,19 +32,24 @@ sdk_path = Path(__file__).resolve().parents[1] / "sdk"
 if str(sdk_path) not in sys.path:
     sys.path.insert(0, str(sdk_path))
 
-from agentops_sdk import AgentOps, AgentOpsConfig
+from marg_sdk import Marg, MargConfig, AgentOps, AgentOpsConfig
 
 
-def create_pilot_client() -> AgentOps:
-    """Initialize AgentOps SDK from environment variables (.env)."""
-    config = AgentOpsConfig.from_env()
+def create_pilot_client() -> Marg:
+    """Initialize Marg SDK from environment variables (.env)."""
+    config = MargConfig.from_env()
     if not config.project_id:
-        config.project_id = os.environ.get("AGENTOPS_PROJECT_ID", "synthetic-demo")
+        config.project_id = os.environ.get("MARG_PROJECT_ID") or os.environ.get("AGENTOPS_PROJECT_ID", "synthetic-demo")
     if not config.api_key:
-        config.api_key = os.environ.get("AGENTOPS_API_KEY") or os.environ.get("AGENTOPS_MCP_API_KEY")
+        config.api_key = (
+            os.environ.get("MARG_API_KEY")
+            or os.environ.get("AGENTOPS_API_KEY")
+            or os.environ.get("MARG_MCP_API_KEY")
+            or os.environ.get("AGENTOPS_MCP_API_KEY")
+        )
     config.flush_interval_seconds = 0.5
     config.capture_payloads = True
-    return AgentOps(config=config)
+    return Marg(config=config)
 
 
 class SupportTools:

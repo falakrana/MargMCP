@@ -1,4 +1,4 @@
-# AgentOps MCP — Implementation Status
+# Marg MCP — Implementation Status
 
 > Current-state snapshot. Kept synchronized with `PROGRESS.md`.
 
@@ -32,7 +32,7 @@
 
 ## Phase 5 — Completed Tasks
 
-- [X] API contract for run timeline joining run metadata, events, and trace references without external DB dependency (`backend/agentops_backend/trace_service.py`)
+- [X] API contract for run timeline joining run metadata, events, and trace references without external DB dependency (`backend/marg_backend/trace_service.py`)
 - [X] Trace retrieval by run ID with assembled parent-child span ordering (root span synthesised from Run record; child spans from events)
 - [X] Run-history filtering by time range, agent, status, metadata — all previously implemented in Phase 3 `queries.py`, confirmed working
 - [X] Event timeline ordering: events returned in `(timestamp ASC, event_id ASC)` stable order; late-arriving events handled correctly
@@ -40,11 +40,11 @@
 - [X] Incomplete trace detection: `is_complete` is False when no terminal event or `ended_at` is NULL; root span status `"running"` for incomplete runs
 - [X] Missing parent span detection: `parent_missing=True` flag on spans referencing a `parent_span_id` not in the result set
 - [X] Error summaries and safe error metadata: `error_type`, `error_summary` surfaced in span attributes; raw prompts/secrets never included
-- [X] Optional payload summaries: `summary`/`output_summary` fields stripped by default (`AGENTOPS_PAYLOAD_CAPTURE_ENABLED=false`); included only when explicitly enabled
+- [X] Optional payload summaries: `summary`/`output_summary` fields stripped by default (`MARG_PAYLOAD_CAPTURE_ENABLED=false`); included only when explicitly enabled
 - [X] Pagination for spans (`max_spans` cap) and events (`event_page` / `event_page_size`) — independent pagination controls
 - [X] Correlation links: `run_id`, `trace_id`, `root_span_id`, retention expiry timestamps, metric time window per run
-- [X] Trace deep-link generation to OTLP UI (Grafana/Tempo) via `AGENTOPS_OTLP_UI_BASE_URL`
-- [X] `trace_data_may_have_expired` flag when run is older than `AGENTOPS_TRACE_RETENTION_DAYS`
+- [X] Trace deep-link generation to OTLP UI (Grafana/Tempo) via `MARG_OTLP_UI_BASE_URL`
+- [X] `trace_data_may_have_expired` flag when run is older than `MARG_TRACE_RETENTION_DAYS`
 - [X] Lookup run by OTLP trace ID (`GET /runs/by-trace/{trace_id}`) with 307 redirect to timeline
 - [X] Retention semantics documented: run record vs OTLP trace data lifecycle, out-of-sync scenarios (`docs/trace-and-history.md`)
 - [X] New config settings: `payload_capture_enabled`, `run_retention_days`, `trace_retention_days`, `otlp_ui_base_url`
@@ -75,7 +75,7 @@
 ## Files Added in Phase 5
 
 ```
-backend/agentops_backend/trace_service.py
+backend/marg_backend/trace_service.py
 backend/tests/test_trace_history.py
 docs/trace-and-history.md
 ```
@@ -84,9 +84,9 @@ docs/trace-and-history.md
 
 ```
 .env.example
-backend/agentops_backend/config.py
-backend/agentops_backend/routes.py
-backend/agentops_backend/schemas.py
+backend/marg_backend/config.py
+backend/marg_backend/routes.py
+backend/marg_backend/schemas.py
 PROGRESS.md
 IMPLEMENTATION_STATUS.md
 ```
@@ -109,7 +109,7 @@ IMPLEMENTATION_STATUS.md
 - [X] Implemented Trace Explorer (`frontend/src/pages/TracesPage.tsx`) for OTLP traces
 - [X] Implemented Errors & Diagnostics Page (`frontend/src/pages/ErrorsPage.tsx`) with error type aggregation and drill-down to filtered run history
 - [X] Implemented Settings Page (`frontend/src/pages/SettingsPage.tsx`) with project credentials, live backend health checks, privacy posture, and SDK code snippet
-- [X] Configured development CORS middleware in `backend/agentops_backend/main.py` allowing local Vite dev server
+- [X] Configured development CORS middleware in `backend/marg_backend/main.py` allowing local Vite dev server
 - [X] Implemented Vitest unit test suite in `frontend/src/utils.test.ts` and `frontend/src/api.test.ts` (20 passed)
 - [X] Documented Phase 6 architecture, features, and manual verification checklist in `docs/dashboard.md`
 
@@ -160,7 +160,7 @@ docs/dashboard.md
 ## Files Modified in Phase 6
 
 ```
-backend/agentops_backend/main.py
+backend/marg_backend/main.py
 docs/implementation-plan.md
 PROGRESS.md
 IMPLEMENTATION_STATUS.md
@@ -170,8 +170,8 @@ IMPLEMENTATION_STATUS.md
 
 ## Phase 7 — Completed Tasks
 
-- [X] Official Python MCP SDK (`mcp` 1.30, `FastMCP`) added as bounded dependency `mcp>=1.2,<2.0`; entry point `agentops-mcp` / `python -m agentops_backend.mcp_server`
-- [X] Protocol-independent tool layer `backend/agentops_backend/mcp_tools.py` delegating to shared `queries` / `trace_service` (new shared `queries.agent_metrics`)
+- [X] Official Python MCP SDK (`mcp` 1.30, `FastMCP`) added as bounded dependency `mcp>=1.2,<2.0`; entry point `marg-mcp` / `python -m marg_backend.mcp_server`
+- [X] Protocol-independent tool layer `backend/marg_backend/mcp_tools.py` delegating to shared `queries` / `trace_service` (new shared `queries.agent_metrics`)
 - [X] Seven read-only tools: `list_agents`, `get_agent_metrics`, `list_runs`, `get_run_details`, `get_trace`, `get_error_summary`, `compare_runs` (all annotated `readOnlyHint`)
 - [X] Strict validation: ID pattern, enums, ISO-8601 times, reversed ranges, max window (30d), page/limit caps, `max_spans` cap
 - [X] AuthN/AuthZ on every call: DB-verified API key with `read` scope; project fixed by key; mismatching `project_id` rejected; stdio key from env, HTTP key from `Authorization` header
@@ -186,7 +186,7 @@ IMPLEMENTATION_STATUS.md
 | Criterion                                              | Status  | Evidence                                                                 |
 | ------------------------------------------------------ | ------- | ------------------------------------------------------------------------ |
 | MCP client can connect and list tools                  | ✅ PASS | `TestMcpProtocolSmoke::test_stdio_client_lists_and_calls_tools`         |
-| Each tool returns real AgentOps data via shared services | ✅ PASS | `TestToolOutputs`                                                        |
+| Each tool returns real Marg data via shared services | ✅ PASS | `TestToolOutputs`                                                        |
 | Invalid requests return controlled errors              | ✅ PASS | `TestValidationAndBounds`, `TestFailureModes`                           |
 | Authorization and result limits apply consistently     | ✅ PASS | `TestAuth`, `TestValidationAndBounds`                                   |
 | All tools remain read-only                             | ✅ PASS | `TestReadOnlySurface`                                                    |
@@ -202,8 +202,8 @@ IMPLEMENTATION_STATUS.md
 ## Files Added in Phase 7
 
 ```
-backend/agentops_backend/mcp_server.py
-backend/agentops_backend/mcp_tools.py
+backend/marg_backend/mcp_server.py
+backend/marg_backend/mcp_tools.py
 backend/tests/test_mcp.py
 docs/mcp-server.md
 ```
@@ -211,8 +211,8 @@ docs/mcp-server.md
 ## Files Modified in Phase 7
 
 ```
-backend/agentops_backend/config.py
-backend/agentops_backend/queries.py
+backend/marg_backend/config.py
+backend/marg_backend/queries.py
 backend/pyproject.toml
 .env.example
 PROGRESS.md
@@ -223,7 +223,7 @@ IMPLEMENTATION_STATUS.md
 
 ## Phase 8 — Completed Tasks
 
-- [X] Assistant package `backend/agentops_backend/assistant/` (`evidence`, `engine`, `providers`, `prompts`, `models`)
+- [X] Assistant package `backend/marg_backend/assistant/` (`evidence`, `engine`, `providers`, `prompts`, `models`)
 - [X] Role, tool permissions, context limits and response format defined (system prompt + `DiagnosticReport` schema: scope, findings, likely_explanations, evidence, unknown, next_checks)
 - [X] Evidence retrieved only through the authorised read-only Phase 7 tool layer (7 read tools); deterministic, budgeted workflow: scope → metrics/recent runs → anomalous/failed runs → traces → baseline comparison → single LLM call
 - [X] Citation verification: unresolvable refs removed, uncited statements dropped; `evidence[]` built from retrieved records, never model text
@@ -249,7 +249,7 @@ IMPLEMENTATION_STATUS.md
 ## Phase 8 — Known Issues & Notes
 
 - Pre-existing, unrelated: `backend/tests/test_infra_config.py::test_compose_defines_observability_services` still FAILS (compose `postgres` service commented out in owner commit `2d7e924`). Not modified.
-- Last full run: `pytest backend/tests --cov=agentops_backend` → 282 passed, 1 failed (above), coverage 94%. Linting/type checks NOT RUN (none configured).
+- Last full run: `pytest backend/tests --cov=marg_backend` → 282 passed, 1 failed (above), coverage 94%. Linting/type checks NOT RUN (none configured).
 - No live LLM provider call was made; real-model quality is unverified until the owner runs the manual checklist with a real key.
 - Only OpenAI-compatible providers are implemented; with hosted providers, redacted telemetry summaries leave the infrastructure.
 - No rate limiting / cost budget on diagnose endpoints (Phase 9). No dashboard UI for diagnostics (not requested).
@@ -259,12 +259,12 @@ IMPLEMENTATION_STATUS.md
 ## Files Added in Phase 8
 
 ```
-backend/agentops_backend/assistant/__init__.py
-backend/agentops_backend/assistant/engine.py
-backend/agentops_backend/assistant/evidence.py
-backend/agentops_backend/assistant/models.py
-backend/agentops_backend/assistant/prompts.py
-backend/agentops_backend/assistant/providers.py
+backend/marg_backend/assistant/__init__.py
+backend/marg_backend/assistant/engine.py
+backend/marg_backend/assistant/evidence.py
+backend/marg_backend/assistant/models.py
+backend/marg_backend/assistant/prompts.py
+backend/marg_backend/assistant/providers.py
 backend/tests/test_assistant.py
 docs/diagnostic-assistant.md
 ```
@@ -272,10 +272,10 @@ docs/diagnostic-assistant.md
 ## Files Modified in Phase 8
 
 ```
-backend/agentops_backend/config.py
-backend/agentops_backend/main.py
-backend/agentops_backend/mcp_server.py
-backend/agentops_backend/routes.py
+backend/marg_backend/config.py
+backend/marg_backend/main.py
+backend/marg_backend/mcp_server.py
+backend/marg_backend/routes.py
 backend/pyproject.toml
 backend/tests/test_mcp.py
 .env.example
@@ -291,15 +291,15 @@ IMPLEMENTATION_STATUS.md
 - [X] Comprehensive threat-model review covering SDK, Ingestion API, DB, Prometheus, Tempo, MCP server, and Diagnostic Assistant (`docs/threat-model.md`)
 - [X] Authentication and authorization hardening: constant-time byte comparison `safe_equals` (immune to Unicode surrogate side-channels), minimum token length (`MIN_TOKEN_LENGTH = 24`), distinct tokens enforced in production
 - [X] API key lifecycle management: endpoints for key listing (`GET /v1/projects/{id}/api-keys`), atomic key rotation with grace period (`POST .../rotate`), and revocation (`POST .../revoke`)
-- [X] Structured operational logging: custom `JsonFormatter` in `backend/agentops_backend/logging_config.py` with automatic secret regex scrubbing and request correlation via `X-Request-ID`
-- [X] Secret scrubbing engine: `backend/agentops_backend/redact.py` (`scrub_text`, `scrub_obj`) supporting recursive scrubbing of JWTs, Bearer tokens, passwords in DB URLs (`postgres://user:pass@host`), `aop_`, `sk-`, and `gsk-` keys
-- [X] Rate limiting: in-process fixed-window `RateLimiter` per project and IP (default 600 RPM, burst 100) with LRU eviction and Prometheus tracking (`agentops_rate_limited_total`)
+- [X] Structured operational logging: custom `JsonFormatter` in `backend/marg_backend/logging_config.py` with automatic secret regex scrubbing and request correlation via `X-Request-ID`
+- [X] Secret scrubbing engine: `backend/marg_backend/redact.py` (`scrub_text`, `scrub_obj`) supporting recursive scrubbing of JWTs, Bearer tokens, passwords in DB URLs (`postgres://user:pass@host`), `aop_`, `sk-`, and `gsk-` keys
+- [X] Rate limiting: in-process fixed-window `RateLimiter` per project and IP (default 600 RPM, burst 100) with LRU eviction and Prometheus tracking (`marg_rate_limited_total`)
 - [X] Request body limits: streaming-aware `BodyLimitMiddleware` immediately rejecting bodies exceeding `max_payload_bytes` with HTTP 413
 - [X] Security response headers: `X-Request-ID`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, `Content-Security-Policy: default-src 'none'`, `X-Frame-Options: DENY`
 - [X] Query boundaries and pagination caps: `rest_max_window_days = 90` max historical query window, `max_page_offset = 10000` cap on pagination offset
 - [X] Database connection pool and timeouts: configured pool sizing (`db_pool_size=10`, `max_overflow=20`, `pool_recycle=1800`), 10s connect timeout, and 15s statement timeout (`db_statement_timeout_ms=15000`)
 - [X] Prometheus metric cardinality protection: `SeriesCap` wrapper limiting unique label combinations to 1,000 per family and grouping excess series into `"other"`
-- [X] Telemetry retention and purge service: `agentops_backend/retention.py` with mandatory dry-run default, project-scoped hard purge (`POST /v1/retention/purge`, `DELETE /v1/projects/{id}/telemetry`), and documented Tempo trace retention alignment
+- [X] Telemetry retention and purge service: `marg_backend/retention.py` with mandatory dry-run default, project-scoped hard purge (`POST /v1/retention/purge`, `DELETE /v1/projects/{id}/telemetry`), and documented Tempo trace retention alignment
 - [X] SDK resilience: `HttpExporter` bounded exponential backoff with full jitter (`max_retries = 3`), immediate fail-fast on 4xx client errors (`400, 401, 403, 404, 413, 422`), observance of `Retry-After` on 429, and absolute exception swallowing
 - [X] SDK queue overflow protection: `AsyncBatchProcessor` drops oldest/newest events safely on buffer saturation (`max_queue_size = 1000`) and tracks `dropped_events_count`
 - [X] SDK unconditional credential scrubbing: credentials scrubbed even if `capture_payloads=True`
@@ -320,17 +320,17 @@ IMPLEMENTATION_STATUS.md
 
 - 301 backend tests passed (43.70s), 9 SDK tests passed (3.05s, 85% coverage). Total 310 tests passing. Frontend built cleanly (11.83s).
 - Rate limiter is in-process memory; transition to shared Redis documented in residual risk register (RR-01) for multi-node deployments.
-- Tempo OTLP trace data retention is managed by Tempo's compactor; AgentOps flags expired traces via `AGENTOPS_TRACE_RETENTION_DAYS` (RR-02).
+- Tempo OTLP trace data retention is managed by Tempo's compactor; Marg flags expired traces via `MARG_TRACE_RETENTION_DAYS` (RR-02).
 - Hosted LLM providers receive sanitized metadata only; on-premise Ollama/vLLM configuration documented for air-gapped environments (RR-03).
 - Host machine lacks Docker CLI; container deployment verification scheduled for Phase 10 (RR-04).
 
 ## Files Added in Phase 9
 
 ```
-backend/agentops_backend/logging_config.py
-backend/agentops_backend/redact.py
-backend/agentops_backend/retention.py
-backend/agentops_backend/security.py
+backend/marg_backend/logging_config.py
+backend/marg_backend/redact.py
+backend/marg_backend/retention.py
+backend/marg_backend/security.py
 backend/tests/test_performance_cardinality.py
 backend/tests/test_security_phase9.py
 docs/security-and-performance-findings.md
@@ -342,28 +342,28 @@ sdk/tests/test_sdk_resilience.py
 
 ```
 .env.example
-backend/agentops_backend/auth.py
-backend/agentops_backend/config.py
-backend/agentops_backend/db.py
-backend/agentops_backend/ingestion.py
-backend/agentops_backend/main.py
-backend/agentops_backend/mcp_server.py
-backend/agentops_backend/metrics.py
-backend/agentops_backend/observability.py
-backend/agentops_backend/registry.py
-backend/agentops_backend/routes.py
-backend/agentops_backend/schemas.py
+backend/marg_backend/auth.py
+backend/marg_backend/config.py
+backend/marg_backend/db.py
+backend/marg_backend/ingestion.py
+backend/marg_backend/main.py
+backend/marg_backend/mcp_server.py
+backend/marg_backend/metrics.py
+backend/marg_backend/observability.py
+backend/marg_backend/registry.py
+backend/marg_backend/routes.py
+backend/marg_backend/schemas.py
 backend/tests/conftest.py
 backend/tests/test_infra_config.py
 backend/tests/test_metrics.py
 docs/implementation-plan.md
 PROGRESS.md
 IMPLEMENTATION_STATUS.md
-sdk/agentops_sdk/client.py
-sdk/agentops_sdk/config.py
-sdk/agentops_sdk/exporters/batch.py
-sdk/agentops_sdk/exporters/http.py
-sdk/agentops_sdk/redaction.py
+sdk/marg_sdk/client.py
+sdk/marg_sdk/config.py
+sdk/marg_sdk/exporters/batch.py
+sdk/marg_sdk/exporters/http.py
+sdk/marg_sdk/redaction.py
 ```
 
 ---
@@ -374,7 +374,7 @@ sdk/agentops_sdk/redaction.py
 - [X] Production container definitions: Hardened `backend/Dockerfile` with non-root user permissions, healthcheck probe (`/health/live`), and uvicorn multi-worker support; added multi-stage `frontend/Dockerfile` with unprivileged Nginx
 - [X] Reverse proxy & HTTPS boundaries: Configured `frontend/nginx.conf` with gzip compression, security headers (`nosniff`, `DENY`, `no-referrer`), SPA routing fallback, and reverse proxying `/v1/`, `/health/`, `/healthz`, `/readyz` to backend
 - [X] Production compose stack: Authored `infra/docker-compose.prod.yml` coordinating backend, frontend, Prometheus, Tempo, and Grafana with network isolation (`agentops_network`) and environment variable secret injection
-- [X] Standard probe aliases: Added root `/healthz` and `/readyz` endpoints to FastAPI backend (`backend/agentops_backend/main.py`)
+- [X] Standard probe aliases: Added root `/healthz` and `/readyz` endpoints to FastAPI backend (`backend/marg_backend/main.py`)
 - [X] Database backup and restore utility: Implemented `scripts/backup_db.py` supporting non-blocking SQLite online backup API and PostgreSQL `pg_dump` with integrity verification and safety pre-restore copies
 - [X] Automated CI/CD pipeline: Created `.github/workflows/ci.yml` running Python 3.10/3.11/3.12 backend pytest suites, SDK test matrix, Node 20 frontend TypeScript build, and secret leakage git scanning
 - [X] Operational runbook: Authored comprehensive operational guide in `docs/runbook.md` covering architecture, startup/shutdown, health checks, Alembic migrations, backups, retention purge, incident troubleshooting playbooks, and rollback procedures
@@ -399,7 +399,7 @@ sdk/agentops_sdk/redaction.py
 - 306 backend tests passing (99.30s), 9 SDK tests passing (3.33s, 85% coverage). Total 315 automated tests passing with 0 failures.
 - Frontend React 19 / TypeScript build succeeded with 0 errors (`npm run build` in 11.03s).
 - Rate limiter remains in-process memory for single-instance MVP; distributed Redis rate limiter deferred to post-MVP roadmap (RR-01).
-- Tempo OTLP trace data retention is managed by Tempo's compactor; AgentOps flags expired traces via `AGENTOPS_TRACE_RETENTION_DAYS` (RR-02).
+- Tempo OTLP trace data retention is managed by Tempo's compactor; Marg flags expired traces via `MARG_TRACE_RETENTION_DAYS` (RR-02).
 - Hosted LLM provider for Diagnostic Assistant requires external API key; on-premise Ollama/vLLM configuration supported for zero egress (RR-03).
 - Host machine lacks Docker CLI; container definitions and Dockerfiles were validated against OCI and Alpine specifications; verified in CI (RR-04).
 
@@ -422,7 +422,7 @@ scripts/backup_db.py
 ```
 .github/workflows/ci.yml
 backend/Dockerfile
-backend/agentops_backend/main.py
+backend/marg_backend/main.py
 backend/pyproject.toml
 docs/implementation-plan.md
 IMPLEMENTATION_STATUS.md

@@ -1,6 +1,6 @@
-# AgentOps SDK
+# Marg MCP SDK
 
-Python SDK for instrumenting AI agents for AgentOps MCP.
+Python SDK for instrumenting AI agents for Marg MCP.
 
 ## Installation
 
@@ -11,11 +11,11 @@ pip install -e .
 ## Basic Usage
 
 ```python
-from agentops_sdk import AgentOps
+from marg_sdk import Marg
 
-agentops = AgentOps.from_env()
+marg = Marg.from_env()
 
-with agentops.start_run(agent_name="my-agent") as run:
+with marg.start_run(agent_id="my-agent") as run:
     # ... your agent logic here
     run.set_output_summary({"result": "Success"})
 ```

@@ -1,4 +1,4 @@
-# AgentOps MCP — Ingestion & Query API (Phase 3)
+# Marg MCP — Ingestion & Query API (Phase 3)
 
 Base URL (local): `http://localhost:8000`. Interactive OpenAPI docs: `/docs`, schema: `/openapi.json`.
 
@@ -15,11 +15,11 @@ All timestamps are ISO‑8601 UTC. All errors use one envelope:
 | Caller | Credential | Header |
 |---|---|---|
 | SDK / project service | Project API key (`aop_<prefix>_<secret>`) with scope `ingest` and/or `read` | `Authorization: Bearer <key>` |
-| Operator (registration only) | `AGENTOPS_ADMIN_TOKEN` | `Authorization: Bearer <token>` |
+| Operator (registration only) | `MARG_ADMIN_TOKEN` | `Authorization: Bearer <token>` |
 
 * Keys belong to exactly one project. Using a key against another project returns `403 project_access_denied`.
-* Keys are stored as HMAC‑SHA256 hashes (keyed with `AGENTOPS_SECRET_KEY`); the plaintext is shown once on creation and never logged.
-* If `AGENTOPS_ADMIN_TOKEN` is unset the admin API returns `503 admin_disabled`.
+* Keys are stored as HMAC‑SHA256 hashes (keyed with `MARG_SECRET_KEY`); the plaintext is shown once on creation and never logged.
+* If `MARG_ADMIN_TOKEN` is unset the admin API returns `503 admin_disabled`.
 
 ## Registration (admin)
 
@@ -30,7 +30,7 @@ curl -X POST localhost:8000/v1/admin/projects -H "Authorization: Bearer $ADMIN" 
 # -> 201 {"id": "<project_id>", "tenant_id": "default", "name": "My Project", "created_at": "...", "agent_count": 0}
 
 # 2. (optional) Pre-register an agent. Unknown agents are auto-registered on first ingest
-#    unless AGENTOPS_AUTO_REGISTER_AGENTS=false.
+#    unless MARG_AUTO_REGISTER_AGENTS=false.
 curl -X POST localhost:8000/v1/admin/projects/$PID/agents -H "Authorization: Bearer $ADMIN" \
   -H 'Content-Type: application/json' -d '{"name": "support-bot", "agent_id": "support-bot"}'
 
@@ -95,7 +95,7 @@ Response `202 Accepted`:
 
 | Rule | Limit / behavior |
 |---|---|
-| Body size | ≤ 1 MiB (`AGENTOPS_MAX_PAYLOAD_BYTES`) → `413` |
+| Body size | ≤ 1 MiB (`MARG_MAX_PAYLOAD_BYTES`) → `413` |
 | Batch size | 1–100 events → `422 batch_too_large` / validation error |
 | IDs (`event_id`, `agent_id`, `run_id`, `project_id`) | `^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$` (UUIDs satisfy this; the SDK's `"default"` agent id is allowed) |
 | `timestamp` | ISO‑8601 **string with UTC offset**; ±24 h of server time else per‑event `timestamp_out_of_range` |
@@ -157,7 +157,7 @@ curl -X DELETE localhost:8000/v1/projects/$PID/telemetry -H "Authorization: Bear
 
 - **Rate Limiting:** Enforces in-process fixed-window limits (default 600 RPM, burst 100). Rejections return `429 Too Many Requests` with standard rate limit headers:
   - `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
-- **Streaming Body Limits:** All requests are capped at `AGENTOPS_MAX_PAYLOAD_BYTES` (1 MiB default). Oversized streaming or chunked payloads immediately return `413 payload_too_large`.
+- **Streaming Body Limits:** All requests are capped at `MARG_MAX_PAYLOAD_BYTES` (1 MiB default). Oversized streaming or chunked payloads immediately return `413 payload_too_large`.
 - **Query Bounds:**
   - Pagination depth cap: `offset <= 10000` (`max_page_offset`). Deeper offsets return `422 validation_error`.
   - Historical query window cap: `started_before - started_after <= 90 days` (`rest_max_window_days`). Wider spans return `422 validation_error`.

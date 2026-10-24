@@ -11,12 +11,12 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from fastapi.testclient import TestClient
 
-from agentops_backend.auth import hash_key, safe_equals
-from agentops_backend.config import Settings
-from agentops_backend.logging_config import JsonFormatter, install_scrubbing
-from agentops_backend.main import create_app
-from agentops_backend.redact import scrub_obj, scrub_text
-from agentops_backend.security import RateLimiter, client_ip
+from marg_backend.auth import hash_key, safe_equals
+from marg_backend.config import Settings
+from marg_backend.logging_config import JsonFormatter, install_scrubbing
+from marg_backend.main import create_app
+from marg_backend.redact import scrub_obj, scrub_text
+from marg_backend.security import RateLimiter, client_ip
 from tests.conftest import (
     ADMIN,
     Tenant,
@@ -254,7 +254,7 @@ def test_retention_purge_dry_run_and_execution(client, tenant):
     old_time = now() - timedelta(days=40)
     with client.app.state.session_factory() as s:
         from sqlalchemy import update
-        from agentops_backend.models import Run
+        from marg_backend.models import Run
         s.execute(
             update(Run)
             .where(Run.run_id.in_(["old-run-1", "old-run-2"]))

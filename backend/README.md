@@ -1,11 +1,11 @@
-# AgentOps Backend (Ingestion + Query API)
+# Marg Backend (Ingestion + Query API)
 
 FastAPI service that receives SDK telemetry, validates and stores it in PostgreSQL, and serves it back through project‑scoped query endpoints. Full API reference: [`docs/api.md`](../docs/api.md). Data model: [`docs/data-model.md`](../docs/data-model.md).
 
 ## Layout
 
 ```
-agentops_backend/
+marg_backend/
   main.py        app factory, error handlers
   config.py      env-driven settings
   routes.py      health / ingestion / query / admin routers
@@ -28,29 +28,27 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 
-$env:AGENTOPS_DATABASE_URL = "sqlite:///./dev.db"
-$env:AGENTOPS_SECRET_KEY   = "<random string>"      # required outside development, >= 32 chars
-$env:AGENTOPS_ADMIN_TOKEN  = "<random token>"
+$env:MARG_DATABASE_URL = "sqlite:///./marg_dev.db"
+$env:MARG_SECRET_KEY   = "<random string>"      # required outside development, >= 32 chars
+$env:MARG_ADMIN_TOKEN  = "<random token>"
 .\.venv\Scripts\alembic.exe upgrade head
-.\.venv\Scripts\python.exe -m agentops_backend.seed          # optional synthetic data; prints a demo key once
-.\.venv\Scripts\uvicorn.exe agentops_backend.main:app_factory --factory --port 8000
+.\.venv\Scripts\python.exe -m marg_backend.seed          # optional synthetic data; prints a demo key once
+.\.venv\Scripts\uvicorn.exe marg_backend.main:app_factory --factory --port 8000
 ```
 
 ## Run with PostgreSQL (Docker)
 
 ```bash
-cp .env.example .env   # then set real POSTGRES_PASSWORD, AGENTOPS_SECRET_KEY, AGENTOPS_ADMIN_TOKEN
+cp .env.example .env   # then set real POSTGRES_PASSWORD, MARG_SECRET_KEY, MARG_ADMIN_TOKEN
 docker compose -f infra/docker-compose.yml --env-file .env up --build
 ```
-
-> The Compose stack and the PostgreSQL code path have **not** been executed in this repository's Phase 3 session (Docker was unavailable); the automated tests run on SQLite. See `PROGRESS.md`.
 
 ## Tests
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest --cov=agentops_backend --cov-report=term-missing
+.\.venv\Scripts\python.exe -m pytest --cov=marg_backend --cov-report=term-missing
 ```
 
 ## Configuration
 
-See `.env.example`. Notable: `AGENTOPS_MAX_PAYLOAD_BYTES`, `AGENTOPS_MAX_BATCH_SIZE`, `AGENTOPS_AUTO_REGISTER_AGENTS`, `AGENTOPS_AUTO_CREATE_TABLES` (dev only).
+See `.env.example`. Notable: `MARG_MAX_PAYLOAD_BYTES`, `MARG_MAX_BATCH_SIZE`, `MARG_AUTO_REGISTER_AGENTS`, `MARG_AUTO_CREATE_TABLES` (dev only).

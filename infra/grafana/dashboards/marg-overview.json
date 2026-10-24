@@ -1,0 +1,105 @@
+{
+  "uid": "marg-overview",
+  "title": "Marg — Operational Overview",
+  "tags": ["marg"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Runs / min by status",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (status) (rate(marg_runs_total[5m])) * 60", "legendFormat": "{{status}}" }
+      ]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Run error ratio (15m)",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(marg_runs_total{status=\"error\"}[15m])) / clamp_min(sum(increase(marg_runs_total[15m])), 1)" }
+      ]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Runs (15m)",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(marg_runs_total[15m]))" }
+      ]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Run duration p50 / p95",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.5, sum by (le) (rate(marg_run_duration_seconds_bucket[5m])))", "legendFormat": "p50" },
+        { "refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(marg_run_duration_seconds_bucket[5m])))", "legendFormat": "p95" }
+      ]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Tokens / min by type",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (token_type) (rate(marg_tokens_total[5m])) * 60", "legendFormat": "{{token_type}}" }
+      ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Tool calls / min by status",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (status) (rate(marg_tool_calls_total[5m])) * 60", "legendFormat": "{{status}}" }
+      ]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "LLM calls / min by status",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (status) (rate(marg_llm_calls_total[5m])) * 60", "legendFormat": "{{status}}" }
+      ]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Ingestion requests / min by HTTP status",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (status) (rate(marg_ingestion_requests_total[5m])) * 60", "legendFormat": "{{status}}" }
+      ]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Ingestion latency p95",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(marg_ingestion_latency_seconds_bucket[5m])))", "legendFormat": "p95" }
+      ]
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "Events by outcome / min",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (outcome) (rate(marg_events_total[5m])) * 60", "legendFormat": "{{outcome}}" }
+      ]
+    },
+    {
+      "id": 11, "type": "timeseries", "title": "Trace pipeline health",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "datasource": { "type": "prometheus", "uid": "marg-prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (outcome) (rate(marg_trace_spans_total[5m])) * 60", "legendFormat": "spans {{outcome}}" },
+        { "refId": "B", "expr": "rate(marg_trace_export_failures_total[5m]) * 60", "legendFormat": "export failures" }
+      ]
+    }
+  ]
+}

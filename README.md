@@ -1,18 +1,18 @@
-# AgentOps MCP
+# Marg MCP
 
 <div align="center">
 
 **Enterprise-Grade Observability, Distributed Tracing & Diagnostic Intelligence for AI Agents**
 
-[![Phase Status](https://img.shields.io/badge/Phase%209-APPROVED-green.svg)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/IMPLEMENTATION_STATUS.md)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/backend/pyproject.toml)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688?logo=fastapi)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/backend/agentops_backend/main.py)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/frontend/package.json)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-3178C6?logo=typescript)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/frontend/tsconfig.json)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/frontend/vite.config.ts)
-[![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-Tracing-F5A800?logo=opentelemetry)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/backend/agentops_backend/tracing.py)
-[![Prometheus](https://img.shields.io/badge/Prometheus-Metrics-E6522C?logo=prometheus)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/backend/agentops_backend/metrics.py)
-[![License](https://img.shields.io/badge/License-BSL%201.1%20%7C%20Apache--2.0-blue.svg)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/LICENSE)
+[![Phase Status](https://img.shields.io/badge/Phase%209-APPROVED-green.svg)](file:///c:/Users/Falak/Desktop/MargMCP/IMPLEMENTATION_STATUS.md)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](file:///c:/Users/Falak/Desktop/MargMCP/backend/pyproject.toml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688?logo=fastapi)](file:///c:/Users/Falak/Desktop/MargMCP/backend/marg_backend/main.py)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](file:///c:/Users/Falak/Desktop/MargMCP/frontend/package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-3178C6?logo=typescript)](file:///c:/Users/Falak/Desktop/MargMCP/frontend/tsconfig.json)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)](file:///c:/Users/Falak/Desktop/MargMCP/frontend/vite.config.ts)
+[![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-Tracing-F5A800?logo=opentelemetry)](file:///c:/Users/Falak/Desktop/MargMCP/backend/marg_backend/tracing.py)
+[![Prometheus](https://img.shields.io/badge/Prometheus-Metrics-E6522C?logo=prometheus)](file:///c:/Users/Falak/Desktop/MargMCP/backend/marg_backend/metrics.py)
+[![License](https://img.shields.io/badge/License-BSL%201.1%20%7C%20Apache--2.0-blue.svg)](file:///c:/Users/Falak/Desktop/MargMCP/LICENSE)
 
 </div>
 
@@ -20,7 +20,7 @@
 
 ## Overview
 
-**AgentOps MCP** is an end-to-end observability, distributed tracing, and diagnostic platform purpose-built for AI agents, multi-agent frameworks, and retrieval-augmented generation (RAG) pipelines.
+**Marg MCP** is an end-to-end observability, distributed tracing, and diagnostic platform purpose-built for AI agents, multi-agent frameworks, and retrieval-augmented generation (RAG) pipelines.
 
 Standard APM tools monitor HTTP servers, database queries, and host resources. They cannot answer the questions that matter when AI agents break:
 - *Why did the agent loop 14 times before timing out?*
@@ -28,7 +28,7 @@ Standard APM tools monitor HTTP servers, database queries, and host resources. T
 - *How much latency did vector database retrieval contribute vs. LLM token generation?*
 - *Where was memory or context corrupted across multi-step handoffs?*
 
-AgentOps MCP bridges this gap. It captures every agent decision, tool execution, LLM call, and error transition with sub-millisecond precision, providing:
+Marg MCP bridges this gap. It captures every agent decision, tool execution, LLM call, and error transition with sub-millisecond precision, providing:
 1. **Lightweight Python SDK** with non-blocking async batching and zero-code-change decorators.
 2. **High-Throughput Ingestion Engine** with strict schema validation, HMAC-SHA256 authenticated API keys, and isolated project namespaces.
 3. **Modern React 19 Monitoring Dashboard** featuring waterfall span trees, real-time KPI metrics, active agent directories, and error diagnostics.
@@ -43,7 +43,7 @@ AgentOps MCP bridges this gap. It captures every agent decision, tool execution,
 flowchart TD
     subgraph ClientApplications["AI Agents & Client Services"]
         Agent["Python AI Agent / LangChain / RAG"]
-        SDK["AgentOps SDK (agentops-sdk)"]
+        SDK["Marg SDK (marg-sdk)"]
         Queue[("Async Batch Queue")]
         Agent -->|"@observe_agent / start_run"| SDK
         SDK -->|Buffer Events| Queue
@@ -93,27 +93,27 @@ flowchart TD
 
 ## Project Status
 
-The project strictly follows a structured 10-phase engineering workflow defined in [`implementation.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/implementation.md).
+The project strictly follows a structured 10-phase engineering workflow defined in [`implementation.md`](file:///c:/Users/Falak/Desktop/MargMCP/implementation.md).
 
 | Phase | Description | Status | Evidence & Test Suite |
 |---|---|---|---|
-| **Phase 1** | Repository Discovery, Architecture & Implementation Plan | `APPROVED` | [`docs/architecture.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/architecture.md), [`docs/telemetry-schema.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/telemetry-schema.md) |
-| **Phase 2** | Core SDK & First Instrumentation Adapter | `APPROVED` | `sdk/agentops_sdk/` (3 tests, non-blocking queue, redaction) |
-| **Phase 3** | Ingestion API, Persistence & Query Services | `APPROVED` | `backend/agentops_backend/` (89 tests, HMAC auth, migrations) |
+| **Phase 1** | Repository Discovery, Architecture & Implementation Plan | `APPROVED` | [`docs/architecture.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/architecture.md), [`docs/telemetry-schema.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/telemetry-schema.md) |
+| **Phase 2** | Core SDK & First Instrumentation Adapter | `APPROVED` | `sdk/marg_sdk/` (3 tests, non-blocking queue, redaction) |
+| **Phase 3** | Ingestion API, Persistence & Query Services | `APPROVED` | `backend/marg_backend/` (89 tests, HMAC auth, migrations) |
 | **Phase 4** | Metrics, Prometheus & Trace Export Pipeline | `APPROVED` | OpenTelemetry OTLP export, Prometheus `/metrics` (134 tests) |
 | **Phase 5** | Trace Details & Run History | `APPROVED` | Waterfall timeline engine, correlation links (172 tests total) |
 | **Phase 6** | Monitoring Dashboard | `APPROVED` | React 19 + TypeScript + Vite UI (20 frontend tests, 0 lint errors) |
-| **Phase 7** | MCP Server & Read-Only Monitoring Tools | `APPROVED` | [`docs/mcp-server.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/mcp-server.md) (7 read tools, FastMCP, 42 tests) |
-| **Phase 9** | Security, Reliability & Performance Hardening | `APPROVED` | [`docs/threat-model.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/threat-model.md), [`docs/security-and-performance-findings.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/security-and-performance-findings.md) (301 backend tests, 9 SDK tests, safe_equals, rate limiting, body caps, SeriesCap) |
+| **Phase 7** | MCP Server & Read-Only Monitoring Tools | `APPROVED` | [`docs/mcp-server.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/mcp-server.md) (7 read tools, FastMCP, 42 tests) |
+| **Phase 9** | Security, Reliability & Performance Hardening | `APPROVED` | [`docs/threat-model.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/threat-model.md), [`docs/security-and-performance-findings.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/security-and-performance-findings.md) (301 backend tests, 9 SDK tests, safe_equals, rate limiting, body caps, SeriesCap) |
 | **Phase 10**| Deployment, End-to-End Pilot & Release Readiness | `NOT_STARTED` | Production containers, CI/CD, documentation polish |
 
-*For historical session logs and complete audit trails, see [`PROGRESS.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/PROGRESS.md) and [`IMPLEMENTATION_STATUS.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/IMPLEMENTATION_STATUS.md).*
+*For historical session logs and complete audit trails, see [`PROGRESS.md`](file:///c:/Users/Falak/Desktop/MargMCP/PROGRESS.md) and [`IMPLEMENTATION_STATUS.md`](file:///c:/Users/Falak/Desktop/MargMCP/IMPLEMENTATION_STATUS.md).*
 
 ---
 
 ## Core Capabilities
 
-### 1. Zero-Overhead Python SDK (`agentops-sdk`)
+### 1. Zero-Overhead Python SDK (`marg-sdk`)
 - **Non-blocking asynchronous delivery**: Background batch worker buffers events in an in-memory queue and flushes every 2 seconds. Telemetry outages never crash or stall monitored agents.
 - **Gradual adoption model**:
   - **Level 1 (`@observe_agent`)**: Automatic lifecycle, execution duration, and exception tracking via a single decorator.
@@ -141,15 +141,15 @@ The project strictly follows a structured 10-phase engineering workflow defined 
 
 ### 4. Distributed Tracing & Observability Pipeline
 - **OpenTelemetry trace materialization**: Backend synthesizes root spans (`agent.run`) and child spans (`llm.chat`, `tool.<name>`) directly from ingested events and exports them to Grafana Tempo via OTLP/HTTP.
-- **Error-preserving sampling**: Error runs are always exported (100%), while healthy runs follow a configurable sampling ratio (`AGENTOPS_TRACE_SAMPLE_RATIO`).
-- **Prometheus metrics**: Exposes bounded, privacy-screened operational metrics (`agentops_runs_total`, `agentops_run_duration_seconds`, `agentops_llm_calls_total`, etc.) via authenticated `GET /metrics`.
+- **Error-preserving sampling**: Error runs are always exported (100%), while healthy runs follow a configurable sampling ratio (`MARG_TRACE_SAMPLE_RATIO`).
+- **Prometheus metrics**: Exposes bounded, privacy-screened operational metrics (`marg_runs_total`, `marg_run_duration_seconds`, `marg_llm_calls_total`, etc.) via authenticated `GET /metrics`.
 - **Pre-configured Grafana dashboards**: Ready-to-use Grafana dashboard provisioning for run rates, error ratios, latency percentiles (p50/p95), and token consumption.
 
-### 5. Read-Only MCP Server (`backend/agentops_backend/mcp_server.py`)
+### 5. Read-Only MCP Server (`backend/marg_backend/mcp_server.py`)
 - **FastMCP standard integration**: Exposes 7 read-only monitoring tools (`list_agents`, `get_agent_metrics`, `list_runs`, `get_run_details`, `get_trace`, `get_error_summary`, `compare_runs`) over `stdio` and `streamable-http`.
 - **Strict tenant enforcement & bound guards**: Every tool call validates API key permissions, caps query windows (max 30 days), and sanitizes output payloads.
 
-### 6. AI Diagnostic Assistant (`backend/agentops_backend/assistant/`)
+### 6. AI Diagnostic Assistant (`backend/marg_backend/assistant/`)
 - **Evidence-grounded root-cause diagnosis**: Investigates agent failures and latency anomalies using real telemetry retrieved through the authorized MCP tool layer.
 - **Strict anti-hallucination & citation verification**: Every finding and hypothesis must cite real run/span IDs. Fabricated references and ungrounded statements are automatically dropped.
 - **Prompt-injection defense**: Telemetry fields (prompts, tool outputs, exception strings) are sanitized, XML-delimited, and treated strictly as untrusted data.
@@ -190,11 +190,11 @@ cp .env.example .env
 
 Edit `.env` to configure your settings (or use the provided developer defaults):
 ```env
-AGENTOPS_ENV=development
-AGENTOPS_SECRET_KEY=dev-secret-key-at-least-32-chars-long!
-AGENTOPS_ADMIN_TOKEN=dev-admin-token-12345
-AGENTOPS_METRICS_TOKEN=dev-metrics-token-12345
-DATABASE_URL=sqlite:///./agentops_dev.db
+MARG_ENV=development
+MARG_SECRET_KEY=dev-secret-key-at-least-32-chars-long!
+MARG_ADMIN_TOKEN=dev-admin-token-12345
+MARG_METRICS_TOKEN=dev-metrics-token-12345
+DATABASE_URL=sqlite:///./marg_dev.db
 ```
 
 ---
@@ -217,7 +217,7 @@ alembic upgrade head
 cd ..
 
 # Start the FastAPI application
-python .\backend\agentops_backend\main.py
+python .\backend\marg_backend\main.py
 ```
 The backend API is now running at `http://localhost:8000`.
 - Interactive Swagger docs: [http://localhost:8000/docs](http://localhost:8000/docs)
@@ -245,7 +245,7 @@ Open your browser at **`http://localhost:3001`**.
 
 To immediately populate the dashboard with realistic agent runs, tool calls, token metrics, and error scenarios:
 ```powershell
-.\.venv\Scripts\python -m agentops_backend.seed
+.\.venv\Scripts\python -m marg_backend.seed
 ```
 Refresh your browser at `http://localhost:3001` to view live charts, waterfall traces, and error summaries!
 
@@ -265,16 +265,16 @@ docker compose -f infra/docker-compose.yml up -d
 
 ## SDK Integration Guide
 
-Integrating AgentOps into any Python AI agent takes less than 3 minutes.
+Integrating Marg into any Python AI agent takes less than 3 minutes.
 
 ### 1. Minimal 1-Line Decorator (`@observe_agent`)
 
 ```python
-from agentops_sdk import AgentOps
-from agentops_sdk.adapters.decorator import observe_agent
+from marg_sdk import Marg
+from marg_sdk.adapters.decorator import observe_agent
 
 # Initialize client from environment (.env)
-agentops = AgentOps.from_env()
+agentops = Marg.from_env()
 
 @observe_agent(agentops, agent_id="research-analyst")
 def process_user_query(query: str):
@@ -286,9 +286,9 @@ def process_user_query(query: str):
 ### 2. Context Manager (`with agentops.start_run()`)
 
 ```python
-from agentops_sdk import AgentOps
+from marg_sdk import Marg
 
-agentops = AgentOps.from_env()
+agentops = Marg.from_env()
 
 def run_agent_workflow(task_payload):
     with agentops.start_run(agent_id="support-bot") as run:
@@ -305,9 +305,9 @@ Capture individual retrieval and tool execution latencies to render nested water
 
 ```python
 import time
-from agentops_sdk import AgentOps
+from marg_sdk import Marg
 
-agentops = AgentOps.from_env()
+agentops = Marg.from_env()
 
 async def run_rag_pipeline(query: str):
     with agentops.start_run(agent_id="rag-knowledge-agent") as run:
@@ -338,16 +338,16 @@ async def run_rag_pipeline(query: str):
         return answer
 ```
 
-*For complete integration patterns and framework adapters, see the [SDK Integration Guide](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/sdk-integration-guide.md).*
+*For complete integration patterns and framework adapters, see the [SDK Integration Guide](file:///c:/Users/Falak/Desktop/MargMCP/docs/sdk-integration-guide.md).*
 
 ---
 
 ## Repository Structure
 
 ```
-AgentOpsMCP/
+MargMCP/
 ├── backend/                        # FastAPI Ingestion, Persistence & Queries
-│   ├── agentops_backend/
+│   ├── marg_backend/
 │   │   ├── main.py                 # Application factory & CORS configuration
 │   │   ├── routes.py               # Ingestion, Query, Admin & Health routes
 │   │   ├── ingestion.py            # Telemetry validation & idempotent persistence
@@ -379,9 +379,9 @@ AgentOpsMCP/
 │   │   └── utils.test.ts           # Vitest unit test suite (20 tests passed)
 │   ├── package.json
 │   └── vite.config.ts
-├── sdk/                            # Python Instrumentation SDK (agentops-sdk)
-│   ├── agentops_sdk/
-│   │   ├── client.py               # AgentOps client & Run context manager
+├── sdk/                            # Python Instrumentation SDK (marg-sdk)
+│   ├── marg_sdk/
+│   │   ├── client.py               # Marg client & Run context manager
 │   │   ├── context.py              # ContextVar runtime propagation
 │   │   ├── events.py               # Canonical TelemetryEvent Pydantic model
 │   │   ├── redaction.py            # Sensitive data screening pipeline
@@ -412,7 +412,7 @@ AgentOpsMCP/
 
 ## Testing & Quality Assurance
 
-AgentOps enforces strict automated testing at every phase. Mocks are never represented as production functionality, and all telemetry failure paths are tested to guarantee client resilience.
+Marg enforces strict automated testing at every phase. Mocks are never represented as production functionality, and all telemetry failure paths are tested to guarantee client resilience.
 
 ### Running Backend Tests (Pytest)
 ```powershell
@@ -439,7 +439,7 @@ npm run build
 ## Security & Privacy Guarantees
 
 1. **Zero Prompt/Secret Leakage**:
-   - Raw user prompts, completions, and sensitive tool arguments are **never captured by default** (`AGENTOPS_PAYLOAD_CAPTURE_ENABLED=false`).
+   - Raw user prompts, completions, and sensitive tool arguments are **never captured by default** (`MARG_PAYLOAD_CAPTURE_ENABLED=false`).
    - The SDK automatically screens and strips blacklisted keys (`prompt`, `api_key`, `secret`, `credentials`) before event dispatch.
 2. **Cardinality Bounding**:
    - Metric labels are strictly bounded and sanitized. High-cardinality attributes like `run_id`, `trace_id`, user IDs, raw prompts, or exception strings are strictly barred from Prometheus metric labels to prevent TSDB memory exhaustion.
@@ -452,30 +452,30 @@ npm run build
 
 ## Documentation Index
 
-- **System Architecture**: [`docs/architecture.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/architecture.md)
-- **AI Diagnostic Assistant**: [`docs/diagnostic-assistant.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/diagnostic-assistant.md)
-- **MCP Server & Read-Only Tools**: [`docs/mcp-server.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/mcp-server.md)
-- **Monitoring Dashboard Guide**: [`docs/dashboard.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/dashboard.md)
-- **Telemetry Schema Specification**: [`docs/telemetry-schema.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/telemetry-schema.md)
-- **SDK Developer Integration Guide**: [`docs/sdk-integration-guide.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/sdk-integration-guide.md)
-- **Trace Details & Run History**: [`docs/trace-and-history.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/trace-and-history.md)
-- **Observability & Metrics Reference**: [`docs/observability.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/observability.md)
-- **REST API Reference**: [`docs/api.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/api.md)
-- **Relational Data Model**: [`docs/data-model.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/data-model.md)
-- **Implementation Plan & Checklist**: [`docs/implementation-plan.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/implementation-plan.md)
-- **Testing & Verification Strategy**: [`docs/testing-strategy.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/testing-strategy.md)
-- **Assumptions & Architecture Decisions**: [`docs/assumptions-and-decisions.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/docs/assumptions-and-decisions.md)
-- **Product Requirements Document (PRD)**: [`PRD.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/PRD.md)
-- **Work Session Progress Log**: [`PROGRESS.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/PROGRESS.md)
-- **Implementation Snapshot**: [`IMPLEMENTATION_STATUS.md`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/IMPLEMENTATION_STATUS.md)
+- **System Architecture**: [`docs/architecture.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/architecture.md)
+- **AI Diagnostic Assistant**: [`docs/diagnostic-assistant.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/diagnostic-assistant.md)
+- **MCP Server & Read-Only Tools**: [`docs/mcp-server.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/mcp-server.md)
+- **Monitoring Dashboard Guide**: [`docs/dashboard.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/dashboard.md)
+- **Telemetry Schema Specification**: [`docs/telemetry-schema.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/telemetry-schema.md)
+- **SDK Developer Integration Guide**: [`docs/sdk-integration-guide.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/sdk-integration-guide.md)
+- **Trace Details & Run History**: [`docs/trace-and-history.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/trace-and-history.md)
+- **Observability & Metrics Reference**: [`docs/observability.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/observability.md)
+- **REST API Reference**: [`docs/api.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/api.md)
+- **Relational Data Model**: [`docs/data-model.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/data-model.md)
+- **Implementation Plan & Checklist**: [`docs/implementation-plan.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/implementation-plan.md)
+- **Testing & Verification Strategy**: [`docs/testing-strategy.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/testing-strategy.md)
+- **Assumptions & Architecture Decisions**: [`docs/assumptions-and-decisions.md`](file:///c:/Users/Falak/Desktop/MargMCP/docs/assumptions-and-decisions.md)
+- **Product Requirements Document (PRD)**: [`PRD.md`](file:///c:/Users/Falak/Desktop/MargMCP/PRD.md)
+- **Work Session Progress Log**: [`PROGRESS.md`](file:///c:/Users/Falak/Desktop/MargMCP/PROGRESS.md)
+- **Implementation Snapshot**: [`IMPLEMENTATION_STATUS.md`](file:///c:/Users/Falak/Desktop/MargMCP/IMPLEMENTATION_STATUS.md)
 
 ---
 
 ## License
 
-AgentOpsMCP uses a dual-licensing model designed to protect the platform while giving developers complete freedom to instrument their agents:
+MargMCP uses a dual-licensing model designed to protect the platform while giving developers complete freedom to instrument their agents:
 
-- **SDK ([`agentops-sdk`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/sdk))**: Licensed under the permissive **[Apache License 2.0](file:///c:/Users/Falak/Desktop/AgentOpsMCP/sdk/LICENSE)**. Developers can freely integrate, embed, and redistribute the telemetry SDK inside any proprietary or open-source agent application with zero restrictions.
-- **Backend, Frontend Dashboard & MCP Server**: Licensed under the **[Business Source License 1.1 (BSL 1.1)](file:///c:/Users/Falak/Desktop/AgentOpsMCP/LICENSE)**. It is free for local development, testing, and internal production use within your own organization. You may not offer AgentOpsMCP as a managed or hosted cloud service to third parties. On January 1, 2030, this code automatically converts to the Apache License 2.0.
+- **SDK ([`marg-sdk`](file:///c:/Users/Falak/Desktop/MargMCP/sdk))**: Licensed under the permissive **[Apache License 2.0](file:///c:/Users/Falak/Desktop/MargMCP/sdk/LICENSE)**. Developers can freely integrate, embed, and redistribute the telemetry SDK inside any proprietary or open-source agent application with zero restrictions.
+- **Backend, Frontend Dashboard & MCP Server**: Licensed under the **[Business Source License 1.1 (BSL 1.1)](file:///c:/Users/Falak/Desktop/MargMCP/LICENSE)**. It is free for local development, testing, and internal production use within your own organization. You may not offer MargMCP as a managed or hosted cloud service to third parties. On January 1, 2030, this code automatically converts to the Apache License 2.0.
 
-See [`LICENSE`](file:///c:/Users/Falak/Desktop/AgentOpsMCP/LICENSE) for complete legal terms.
+See [`LICENSE`](file:///c:/Users/Falak/Desktop/MargMCP/LICENSE) for complete legal terms.

@@ -1,4 +1,4 @@
-# AgentOps MCP — Implementation Plan (Phase Checklist)
+# Marg MCP — Implementation Plan (Phase Checklist)
 
 This is the operational checklist derived from `implementation.md`. Each phase has testable exit criteria.
 
