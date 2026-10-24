@@ -20,6 +20,7 @@ class AsyncBatchProcessor:
         self._count_lock = threading.Lock()
         
         self._stop_event = threading.Event()
+        self._flush_trigger = threading.Event()
         self._thread = threading.Thread(target=self._worker, daemon=True)
         self._thread.start()
         
@@ -32,44 +33,46 @@ class AsyncBatchProcessor:
         """Add an event to the queue safely (non-blocking)."""
         try:
             self.queue.put_nowait(event)
+            if self.queue.qsize() >= self.config.max_batch_size:
+                self._flush_trigger.set()
         except queue.Full:
             with self._count_lock:
                 self._dropped_events_count += 1
             logger.debug("AgentOps telemetry queue full, dropping event.")
-            
-    def _worker(self):
+
+    def _drain_batch(self) -> List[TelemetryEvent]:
         batch: List[TelemetryEvent] = []
-        last_flush_time = time.time()
-        
-        while True:
+        while len(batch) < self.config.max_batch_size:
             try:
-                # Wait for an event with a timeout
-                timeout = max(0.1, self.config.flush_interval_seconds - (time.time() - last_flush_time))
-                event = self.queue.get(timeout=timeout)
-                batch.append(event)
+                batch.append(self.queue.get_nowait())
             except queue.Empty:
-                pass
-                
-            current_time = time.time()
-            time_to_flush = (current_time - last_flush_time) >= self.config.flush_interval_seconds
-            size_to_flush = len(batch) >= self.config.max_batch_size
-            stopping = self._stop_event.is_set()
-            
-            if batch and (time_to_flush or size_to_flush or stopping):
-                success = self.exporter.export(batch)
-                if not success:
-                    pass 
-                batch = []
-                last_flush_time = current_time
-                
-            if stopping and self.queue.empty():
-                # Flush one last time if anything was left, then exit
-                if batch:
-                    self.exporter.export(batch)
                 break
+        return batch
+
+    def _worker(self):
+        while True:
+            self._flush_trigger.wait(timeout=self.config.flush_interval_seconds)
+            self._flush_trigger.clear()
+            
+            while True:
+                batch = self._drain_batch()
+                if not batch:
+                    break
+                self.exporter.export(batch)
+                
+            if self._stop_event.is_set():
+                break
+
+        # Flush any remaining events on shutdown
+        while not self.queue.empty():
+            batch = self._drain_batch()
+            if not batch:
+                break
+            self.exporter.export(batch)
                 
     def shutdown(self, timeout: float = 5.0):
         """Stop the background worker and flush remaining events."""
         self._stop_event.set()
+        self._flush_trigger.set()
         self._thread.join(timeout=timeout)
         self.exporter.shutdown()
